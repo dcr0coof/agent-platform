@@ -28,11 +28,17 @@ type MemoryConfig struct {
 	SummaryTrigger int  `yaml:"summary_trigger"`
 }
 
+// WeatherConfig 天气 API 配置
+type WeatherConfig struct {
+	APIKey string `yaml:"api_key"`
+}
+
 // Config 顶层配置
 type Config struct {
-	LLM    LLMConfig    `yaml:"llm"`
-	Agent  AgentConfig  `yaml:"agent"`
-	Memory MemoryConfig `yaml:"memory"`
+	LLM     LLMConfig     `yaml:"llm"`
+	Agent   AgentConfig   `yaml:"agent"`
+	Memory  MemoryConfig  `yaml:"memory"`
+	Weather WeatherConfig `yaml:"weather"`
 }
 
 // DefaultConfig 返回默认配置
@@ -89,5 +95,8 @@ func applyEnvOverrides(cfg *Config) {
 	}
 	if v := os.Getenv("AGENT_LLM_MODEL"); v != "" {
 		cfg.LLM.Model = v
+	}
+	if v := os.Getenv("AGENT_WEATHER_API_KEY"); v != "" {
+		cfg.Weather.APIKey = v
 	}
 }

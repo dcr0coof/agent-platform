@@ -42,10 +42,15 @@ func main() {
 	reg.Register(&builtin.Calculator{})
 	reg.Register(&builtin.DateTime{})
 
+	// 天气工具：从配置加载 API Key
+	if cfg.Weather.APIKey != "" {
+		reg.Register(builtin.NewWeather(cfg.Weather.APIKey))
+	}
+
 	mem := memory.NewBuffer(cfg.Memory.MaxMessages)
 
 	ag := agent.New(cfg.Agent.Name, llmClient, mem, reg, cfg.Agent.MaxIterations)
-	ag.SetSystemPrompt("你是一个有用的 AI 助手。你可以使用计算器工具做数学计算，使用 datetime 工具获取当前时间。回答简洁，用中文。")
+	ag.SetSystemPrompt("你是一个有用的 AI 助手。你可以使用计算器工具做数学计算，使用 datetime 工具获取当前时间，使用 weather 工具查询天气。回答简洁，用中文。")
 
 	fmt.Printf("🤖 %s 已启动 (模型: %s)\n", cfg.Agent.Name, cfg.LLM.Model)
 	fmt.Println("输入消息开始对话，输入 /exit 退出，/clear 清空对话")
