@@ -1,14 +1,14 @@
-# GitHub publication drafts
+# GitHub publication records
 
-These are local drafts, not published Issues or Pull Requests.
+GitHub authorization was restored and these drafts were published on 2026-09-05. The directory name is retained for continuity; `issues.json` now contains actual Issue numbers and URLs.
 
-The current authorization was rejected by GitHub. Once the owner completes official login:
+| Change | Issue | Pull request | Branch |
+| --- | --- | --- | --- |
+| Core reliability baseline | [#1](https://github.com/dcr0coof/agent-platform/issues/1) | [#10](https://github.com/dcr0coof/agent-platform/pull/10) | codex/reliability-baseline |
+| Travel direction and delivery workflow | [#2](https://github.com/dcr0coof/agent-platform/issues/2) | [#11](https://github.com/dcr0coof/agent-platform/pull/11) | codex/travel-roadmap-and-workflow |
 
-1. Read the remote repository's default branch, existing Issues, PRs and labels.
-2. Push `codex/reliability-baseline` containing commit `0524ab6`.
-3. Find or create the baseline Issue using its stable marker in `issues.json`; open the baseline PR with the actual Issue reference and the body from `baseline-pr.md`.
-4. Push the separate workflow branch and publish the workflow Issue/PR, specifying the baseline dependency.
-5. Publish remaining Issues in `issues.json` order, replacing draft dependency keys with actual Issue links. Preserve existing equivalent Issues rather than duplicating them.
-6. Record actual URLs in this directory or the roadmap. An Issue remains open until its acceptance criteria are met and its PR is merged.
+Feature Issues [#3–#9](https://github.com/dcr0coof/agent-platform/issues) were published in dependency order. Each body references its actual prerequisites. They describe planned capabilities, not implemented features.
 
-Check required CI before treating any PR as complete. The owner authorized project publishing; login is the remaining external dependency, not a request to approve the wording again.
+PR #11 initially targets the baseline branch so the workflow diff can be reviewed separately. After PR #10 merges, retarget #11 to master. Verify required checks and resulting diffs before merge. Publication alone does not mean that a PR is merged or that its Issue is complete.
+
+For subsequent changes, reuse the relevant Issue, push verified commits and update the associated PR. Before creating an Issue or PR, inspect existing records and stable markers to avoid duplicates.

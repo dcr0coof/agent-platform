@@ -29,19 +29,19 @@
 
 ## 交付顺序
 
-| 草稿编号 | 功能切片 | 可验收结果 | 前置 |
+| GitHub Issue | 功能切片 | 可验收结果 | 前置 Issue |
 | --- | --- | --- | --- |
-| 00 | 当前核心可靠性版本 | 完整回合记忆、HTTP/工具修复、CLI 集成测试、CI | 无 |
-| 01 | GitHub 工作流与产品方向 | 开发约定、Issue/PR 模板、可执行路线 | 00 |
-| 02 | 可编辑的出行会话 | Web 创建出行需求、约束编辑、会话持久化、运行状态和取消 | 00、01 |
-| 03 | 天气影响与备选活动 | 真实预报、时间范围判断、天气证据卡与室内外替代建议 | 02 |
-| 04 | 攻略资料 RAG 与引用 | 上传 MD/TXT/文本 PDF，索引进度、检索、引用定位、版本和删除 | 02 |
-| 05 | 长对话约束与上下文预算 | token 预算、任务状态、摘要、用户纠正及上下文面板 | 04 |
-| 06 | 地点与路线可行性 | 地点消歧、路线估算、地图与时间冲突提示 | 03、05 |
-| 07 | 预算、清单和行程导出 | 预算分项、行李清单、用户确认后导出日历/行程 | 06 |
-| 08 | 运行回放、质量评测与演示 | 受限二次检索、运行记录、策略对比、访客演示和部署文档 | 04、05、07 |
+| [#1](https://github.com/dcr0coof/agent-platform/issues/1) | 当前核心可靠性版本 | 完整回合记忆、HTTP/工具修复、CLI 集成测试、CI | 无 |
+| [#2](https://github.com/dcr0coof/agent-platform/issues/2) | GitHub 工作流与产品方向 | 开发约定、Issue/PR 模板、可执行路线 | #1 |
+| [#3](https://github.com/dcr0coof/agent-platform/issues/3) | 可编辑的出行会话 | Web 创建出行需求、约束编辑、会话持久化、运行状态和取消 | #1、#2 |
+| [#4](https://github.com/dcr0coof/agent-platform/issues/4) | 天气影响与备选活动 | 真实预报、时间范围判断、天气证据卡与室内外替代建议 | #3 |
+| [#5](https://github.com/dcr0coof/agent-platform/issues/5) | 攻略资料 RAG 与引用 | 上传 MD/TXT/文本 PDF，索引进度、检索、引用定位、版本和删除 | #3 |
+| [#6](https://github.com/dcr0coof/agent-platform/issues/6) | 长对话约束与上下文预算 | token 预算、任务状态、摘要、用户纠正及上下文面板 | #5 |
+| [#7](https://github.com/dcr0coof/agent-platform/issues/7) | 地点与路线可行性 | 地点消歧、路线估算、地图与时间冲突提示 | #4、#6 |
+| [#8](https://github.com/dcr0coof/agent-platform/issues/8) | 预算、清单和行程导出 | 预算分项、行李清单、用户确认后导出日历/行程 | #7 |
+| [#9](https://github.com/dcr0coof/agent-platform/issues/9) | 运行回放、质量评测与演示 | 受限二次检索、运行记录、策略对比、访客演示和部署文档 | #5、#6、#8 |
 
-这是依赖顺序，不是已发布的 GitHub Issue 编号。发布后应使用真实 Issue 链接替换或补充。
+以上为已发布的 GitHub Issues。当前核心版本对应 [PR #10](https://github.com/dcr0coof/agent-platform/pull/10)，工作流与路线对应 [PR #11](https://github.com/dcr0coof/agent-platform/pull/11)。后续功能通过各自的 Issue 和关联 PR 实现。
 
 ## 底层与前端
 

@@ -1,6 +1,6 @@
 # Triage label mapping
 
-Inspect remote labels before applying or creating labels. Until remote access succeeds, the following is a proposed mapping, not a claim that the labels already exist.
+Inspect remote labels before applying or creating labels. On 2026-09-05, `bug`, `enhancement`, and `wontfix` were verified and `ready-for-agent` was created for the published Issues. Other state labels below remain conventions to create only when needed.
 
 | Role | Preferred label |
 | --- | --- |

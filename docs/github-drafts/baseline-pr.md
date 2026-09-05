@@ -8,7 +8,9 @@
 
 ## 关联 Issue
 
-待 GitHub 授权成功后创建或复用“核心可靠性基线”Issue，并填入实际 `Closes #N`。
+Closes #1
+
+已发布为 [PR #10](https://github.com/dcr0coof/agent-platform/pull/10)。
 
 ## 实现与验证
 

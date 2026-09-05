@@ -6,7 +6,9 @@
 
 ## 关联 Issue
 
-待 GitHub 授权成功后创建或复用“工作流与产品方向”Issue，并填入实际 `Closes #N`。依赖核心可靠性基线 PR。
+Closes #2
+
+已发布为 [PR #11](https://github.com/dcr0coof/agent-platform/pull/11)，依赖 [PR #10](https://github.com/dcr0coof/agent-platform/pull/10)。当前以基线分支为比较目标，基线合并后调整为 master。
 
 ## 变更与验证
 
@@ -17,4 +19,4 @@
 
 ## 限制
 
-GitHub 发布需要有效授权。草稿文件不代表远端 Issue/PR 已创建；发布后补充真实链接，避免重复创建。
+9 个 Issues 和 2 个 PR 已发布。对应链接与依赖见发布记录；功能 Issue 的创建不代表功能已实现，PR 创建不代表已经合并。

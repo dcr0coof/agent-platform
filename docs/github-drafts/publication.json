@@ -1,0 +1,75 @@
+{
+  "repository": "dcr0coof/agent-platform",
+  "issues": [
+    {
+      "key": "baseline",
+      "number": 1,
+      "url": "https://github.com/dcr0coof/agent-platform/issues/1",
+      "title": "fix: 锁定 Agent 核心可靠性与 CLI 回归基线"
+    },
+    {
+      "key": "workflow",
+      "number": 2,
+      "url": "https://github.com/dcr0coof/agent-platform/issues/2",
+      "title": "docs: 建立出行 Agent 方向与 Issue/PR 发布约定"
+    },
+    {
+      "key": "trip",
+      "number": 3,
+      "url": "https://github.com/dcr0coof/agent-platform/issues/3",
+      "title": "feat: 在 Web 工作台创建并持续编辑出行会话"
+    },
+    {
+      "key": "weather",
+      "number": 4,
+      "url": "https://github.com/dcr0coof/agent-platform/issues/4",
+      "title": "feat: 根据出行日期展示天气影响和活动备选"
+    },
+    {
+      "key": "rag",
+      "number": 5,
+      "url": "https://github.com/dcr0coof/agent-platform/issues/5",
+      "title": "feat: 上传攻略资料并获得可定位原文的行程回答"
+    },
+    {
+      "key": "context",
+      "number": 6,
+      "url": "https://github.com/dcr0coof/agent-platform/issues/6",
+      "title": "feat: 保留长对话出行约束并展示上下文预算"
+    },
+    {
+      "key": "routes",
+      "number": 7,
+      "url": "https://github.com/dcr0coof/agent-platform/issues/7",
+      "title": "feat: 校验候选地点和路线时间并展示地图行程"
+    },
+    {
+      "key": "budget",
+      "number": 8,
+      "url": "https://github.com/dcr0coof/agent-platform/issues/8",
+      "title": "feat: 生成可编辑预算、行李清单并导出行程"
+    },
+    {
+      "key": "showcase",
+      "number": 9,
+      "url": "https://github.com/dcr0coof/agent-platform/issues/9",
+      "title": "feat: 提供出行 Agent 运行回放、评测对比和访客演示"
+    }
+  ],
+  "pullRequests": [
+    {
+      "key": "baseline",
+      "number": 10,
+      "url": "https://github.com/dcr0coof/agent-platform/pull/10",
+      "head": "codex/reliability-baseline",
+      "base": "master"
+    },
+    {
+      "key": "workflow",
+      "number": 11,
+      "url": "https://github.com/dcr0coof/agent-platform/pull/11",
+      "head": "codex/travel-roadmap-and-workflow",
+      "base": "codex/reliability-baseline"
+    }
+  ]
+}
