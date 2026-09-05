@@ -14,11 +14,11 @@ const (
 
 // Message 一条对话消息
 type Message struct {
-	Role       Role        `json:"role"`
-	Content    string      `json:"content,omitempty"`
-	ToolCalls  []ToolCall  `json:"tool_calls,omitempty"`
-	ToolCallID string      `json:"tool_call_id,omitempty"`
-	Name       string      `json:"name,omitempty"`
+	Role       Role       `json:"role"`
+	Content    string     `json:"content"`
+	ToolCalls  []ToolCall `json:"tool_calls,omitempty"`
+	ToolCallID string     `json:"tool_call_id,omitempty"`
+	Name       string     `json:"name,omitempty"`
 }
 
 // ToolCall LLM 返回的工具调用请求

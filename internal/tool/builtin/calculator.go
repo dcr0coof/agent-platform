@@ -13,8 +13,10 @@ import (
 // Calculator 简单表达式求值计算器
 type Calculator struct{}
 
-func (c *Calculator) Name() string        { return "calculator" }
-func (c *Calculator) Description() string { return "计算数学表达式，支持 + - * / 和括号，如 '2+3*4' 或 '(1+2)*3'" }
+func (c *Calculator) Name() string { return "calculator" }
+func (c *Calculator) Description() string {
+	return "计算数学表达式，支持 + - * / 和括号，如 '2+3*4' 或 '(1+2)*3'"
+}
 func (c *Calculator) Parameters() map[string]interface{} {
 	return map[string]interface{}{
 		"type": "object",
@@ -29,13 +31,22 @@ func (c *Calculator) Parameters() map[string]interface{} {
 }
 
 func (c *Calculator) Execute(ctx context.Context, params map[string]interface{}) (string, error) {
+	if err := ctx.Err(); err != nil {
+		return "", err
+	}
 	expr, ok := params["expression"].(string)
 	if !ok {
 		return "", fmt.Errorf("expression is required")
 	}
+	if len(expr) > 4096 {
+		return "", fmt.Errorf("表达式不能超过 4096 字节")
+	}
 	result, err := evalExpr(expr)
 	if err != nil {
 		return "", fmt.Errorf("计算失败: %w", err)
+	}
+	if math.IsNaN(result) || math.IsInf(result, 0) {
+		return "", fmt.Errorf("计算结果超出有限数值范围")
 	}
 	// 整数结果不显示小数点
 	if result == math.Trunc(result) {
@@ -92,10 +103,14 @@ func eval(node ast.Expr) (float64, error) {
 		if err != nil {
 			return 0, err
 		}
-		if n.Op == token.SUB {
+		switch n.Op {
+		case token.SUB:
 			return -val, nil
+		case token.ADD:
+			return val, nil
+		default:
+			return 0, fmt.Errorf("不支持的运算符: %s", n.Op)
 		}
-		return val, nil
 	default:
 		return 0, fmt.Errorf("不支持的表达式类型")
 	}

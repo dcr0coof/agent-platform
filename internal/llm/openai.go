@@ -7,17 +7,18 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 )
 
 // openaiChatRequest OpenAI /v1/chat/completions 请求体
 type openaiChatRequest struct {
-	Model       string     `json:"model"`
-	Messages    []Message  `json:"messages"`
-	Tools       []ToolDef  `json:"tools,omitempty"`
-	MaxTokens   int        `json:"max_tokens,omitempty"`
-	Temperature float64    `json:"temperature,omitempty"`
-	Stream      bool       `json:"stream"`
+	Model       string    `json:"model"`
+	Messages    []Message `json:"messages"`
+	Tools       []ToolDef `json:"tools,omitempty"`
+	MaxTokens   int       `json:"max_tokens,omitempty"`
+	Temperature float64   `json:"temperature"`
+	Stream      bool      `json:"stream"`
 }
 
 // openaiChatResponse 响应体
@@ -49,11 +50,11 @@ type OpenAIClient struct {
 func NewOpenAI(apiKey, baseURL, model string, maxTokens int, temperature float64) *OpenAIClient {
 	return &OpenAIClient{
 		apiKey:      apiKey,
-		baseURL:     baseURL,
+		baseURL:     strings.TrimRight(strings.TrimSpace(baseURL), "/"),
 		model:       model,
 		maxTokens:   maxTokens,
 		temperature: temperature,
-		httpClient:  &http.Client{Timeout: 60 * time.Second},
+		httpClient:  &http.Client{Timeout: 60 * time.Second, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }},
 	}
 }
 
@@ -87,9 +88,17 @@ func (c *OpenAIClient) Chat(ctx context.Context, messages []Message, tools []Too
 	}
 	defer resp.Body.Close()
 
-	respBytes, err := io.ReadAll(resp.Body)
+	const maxResponseBytes = 4 << 20
+	respBytes, err := io.ReadAll(io.LimitReader(resp.Body, maxResponseBytes+1))
 	if err != nil {
 		return nil, fmt.Errorf("read response: %w", err)
+	}
+	if len(respBytes) > maxResponseBytes {
+		return nil, fmt.Errorf("HTTP %d: response exceeds %d bytes", resp.StatusCode, maxResponseBytes)
+	}
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		// 不回显响应原文，避免代理服务器将凭证或请求内容反射到日志。
+		return nil, fmt.Errorf("LLM HTTP %d (%s)", resp.StatusCode, http.StatusText(resp.StatusCode))
 	}
 
 	var chatResp openaiChatResponse
@@ -106,6 +115,9 @@ func (c *OpenAIClient) Chat(ctx context.Context, messages []Message, tools []Too
 	}
 
 	choice := chatResp.Choices[0]
+	if choice.FinishReason == "length" || choice.FinishReason == "content_filter" {
+		return nil, fmt.Errorf("LLM response incomplete: finish_reason=%s", choice.FinishReason)
+	}
 	return &Response{
 		Content:   choice.Message.Content,
 		ToolCalls: choice.Message.ToolCalls,

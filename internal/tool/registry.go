@@ -2,6 +2,7 @@ package tool
 
 import (
 	"fmt"
+	"sort"
 	"sync"
 )
 
@@ -42,5 +43,6 @@ func (r *Registry) List() []Tool {
 	for _, t := range r.tools {
 		result = append(result, t)
 	}
+	sort.Slice(result, func(i, j int) bool { return result[i].Name() < result[j].Name() })
 	return result
 }
