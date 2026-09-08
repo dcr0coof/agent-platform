@@ -8,10 +8,10 @@ type Memory interface {
 	Add(msg llm.Message)
 	// All 返回完整消息列表（system prompt + history）
 	All() []llm.Message
-	// SystemPrompt 设置/更新 system prompt
+	// SetSystem 设置/更新 system prompt
 	SetSystem(prompt string)
 	// Clear 清空对话历史（保留 system prompt）
 	Clear()
-	// Len 返回对话轮数（不含 system prompt）
+	// Len 返回消息条数（不含 system prompt）
 	Len() int
 }

@@ -16,9 +16,10 @@ agent:
 # 记忆配置
 memory:
   max_messages: 20
-  enable_summary: true
+  enable_summary: false # 摘要尚未实现；设为 true 会明确报错
   summary_trigger: 30
 
 # 天气 API 配置
 weather:
   api_key: ""           # 通过环境变量 AGENT_WEATHER_API_KEY 设置
+  base_url: ""          # AGENT_WEATHER_BASE_URL，例如 https://你的专属域名.qweatherapi.com

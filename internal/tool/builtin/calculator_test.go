@@ -44,6 +44,17 @@ func TestCalculator_DivideByZero(t *testing.T) {
 	}
 }
 
+func TestCalculatorRejectsInvalidArithmetic(t *testing.T) {
+	for _, expr := range []string{"!1", "^1", "&1", "1e308*1e308"} {
+		t.Run(expr, func(t *testing.T) {
+			_, err := (&Calculator{}).Execute(context.Background(), map[string]interface{}{"expression": expr})
+			if err == nil {
+				t.Fatal("accepted unsupported or non-finite arithmetic")
+			}
+		})
+	}
+}
+
 func TestDateTime_Execute(t *testing.T) {
 	dt := &DateTime{}
 	result, err := dt.Execute(context.Background(), nil)
