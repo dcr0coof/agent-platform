@@ -21,7 +21,12 @@ jobs:
           cache: true
       - name: Check formatting
         shell: bash
-        run: test -z "$(gofmt -l cmd internal)"
+        run: |
+          unformatted=$(gofmt -l cmd internal)
+          if [ -n "$unformatted" ]; then
+            echo "$unformatted"
+            exit 1
+          fi
       - run: go vet ./...
       - run: go test ./... -cover
       - name: Race detection
