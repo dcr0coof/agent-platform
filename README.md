@@ -105,6 +105,8 @@ go test -race ./...
 
 详细分析与后续优先级见 [项目审查报告](docs/review-and-roadmap.md)。
 
+后续产品方向为天气感知的出行与生活规划 Agent，覆盖行程约束、天气备选、攻略 RAG、路线与预算。具体阶段见 [出行 Agent 路线](docs/travel-agent-roadmap.md)。这些扩展尚未实现；每个功能通过 GitHub Issue 和关联 PR 记录实现与验证，开发流程见 [AGENTS.md](AGENTS.md)。
+
 ## License
 
 原项目声明使用 MIT；目前仓库没有独立 LICENSE 文件，正式分发前需补齐版权主体与许可证正文。

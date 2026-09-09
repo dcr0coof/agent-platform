@@ -1,0 +1,125 @@
+{
+  "repository": "dcr0coof/agent-platform",
+  "status": "published",
+  "issues": [
+    {
+      "key": "baseline",
+      "title": "fix: 锁定 Agent 核心可靠性与 CLI 回归基线",
+      "category": "bug",
+      "proposedState": "ready-for-agent",
+      "blockedBy": [],
+      "status": "published",
+      "body": "<!-- agent-platform-slice:baseline:v1 -->\n\n## What to build\n\n将已完成的核心可靠性改进发布为可验证版本，让连续工具对话、失败后重试、天气查询和 CLI 退出行为可预期。\n\n## Acceptance criteria\n\n- [ ] 消息窗口保留完整用户回合和工具调用配对；失败或取消不污染旧历史。\n- [ ] LLM HTTP 错误、零温度、响应截断及天气 gzip/专属 Host 配置有回归覆盖。\n- [ ] 计算器拒绝非法运算和非有限结果；配置错误启动时明确反馈。\n- [ ] go test ./...、go vet ./...、go build ./... 通过；CI 包含 Linux 竞态检测。\n- [ ] PR 记录配置迁移与未验证的真实服务边界。\n\n## Blocked by\n\nNone - can start immediately\n\n## Scope boundaries\n\n按既定功能切片交付，不默认实现自动购票、预订或发送外部消息。需要真实 Provider 时使用用户授权凭证，并明确模拟测试与真实服务验证的区别。\n",
+      "number": 1,
+      "url": "https://github.com/dcr0coof/agent-platform/issues/1"
+    },
+    {
+      "key": "workflow",
+      "title": "docs: 建立出行 Agent 方向与 Issue/PR 发布约定",
+      "category": "enhancement",
+      "proposedState": "ready-for-agent",
+      "blockedBy": [
+        "baseline"
+      ],
+      "status": "published",
+      "body": "<!-- agent-platform-slice:workflow:v1 -->\n\n## What to build\n\n定义天气感知的出行与生活规划场景，建立每个功能都可追踪、可验证的 GitHub 协作流程。\n\n## Acceptance criteria\n\n- [ ] 路线包含天气、行程、RAG、上下文、路线预算与 Web 交互。\n- [ ] 每个功能切片有验收标准、前置依赖和范围边界。\n- [ ] 仓库包含 Issue/PR 模板及后续代理可读取的工作约定。\n- [ ] 明确草稿与已发布状态；GitHub 身份授权不得依赖明文账户密码。\n\n## Blocked by\n\n- #1\n\n## Scope boundaries\n\n按既定功能切片交付，不默认实现自动购票、预订或发送外部消息。需要真实 Provider 时使用用户授权凭证，并明确模拟测试与真实服务验证的区别。\n",
+      "number": 2,
+      "url": "https://github.com/dcr0coof/agent-platform/issues/2"
+    },
+    {
+      "key": "trip",
+      "title": "feat: 在 Web 工作台创建并持续编辑出行会话",
+      "category": "enhancement",
+      "proposedState": "ready-for-agent",
+      "blockedBy": [
+        "baseline",
+        "workflow"
+      ],
+      "status": "published",
+      "body": "<!-- agent-platform-slice:trip:v1 -->\n\n## What to build\n\n用户在浏览器输入目的地、日期、人数、预算和偏好，查看 Agent 回复及执行状态，编辑约束后继续同一会话。\n\n## Acceptance criteria\n\n- [ ] Go API 与 Vue 工作台形成完整可运行路径；消息和出行约束持久化，重启可读取。\n- [ ] 遗漏出发地、日期或预算范围时明确询问，不默认为已确认。\n- [ ] 用户可查看与编辑结构化约束；不同会话互不串用。\n- [ ] 运行状态由 SSE 发送；用户可取消任务，断线续读不重复执行。\n- [ ] 覆盖端到端对话、重启、取消和会话隔离；演示不需要真实付费请求。\n\n## Blocked by\n\n- #1\n- #2\n\n## Scope boundaries\n\n按既定功能切片交付，不默认实现自动购票、预订或发送外部消息。需要真实 Provider 时使用用户授权凭证，并明确模拟测试与真实服务验证的区别。\n",
+      "number": 3,
+      "url": "https://github.com/dcr0coof/agent-platform/issues/3"
+    },
+    {
+      "key": "weather",
+      "title": "feat: 根据出行日期展示天气影响和活动备选",
+      "category": "enhancement",
+      "proposedState": "ready-for-agent",
+      "blockedBy": [
+        "trip"
+      ],
+      "status": "published",
+      "body": "<!-- agent-platform-slice:weather:v1 -->\n\n## What to build\n\n用户为已有行程查询天气影响，查看带时间和来源的天气卡片，获得符合约束的室内外备选建议。\n\n## Acceptance criteria\n\n- [ ] 查询使用明确地点与日期，标注 Provider、获取时间和预报覆盖区间。\n- [ ] 超出预报范围或 Provider 失败时明确未知，不编造指定日期天气。\n- [ ] 建议指出相关天气证据，区分工具观测与模型建议。\n- [ ] 用户可切换备选方案并更新行程草稿。\n- [ ] 使用固定天气数据验证雨天、缺数据、过期结果、日期边界和取消。\n\n## Blocked by\n\n- #3\n\n## Scope boundaries\n\n按既定功能切片交付，不默认实现自动购票、预订或发送外部消息。需要真实 Provider 时使用用户授权凭证，并明确模拟测试与真实服务验证的区别。\n",
+      "number": 4,
+      "url": "https://github.com/dcr0coof/agent-platform/issues/4"
+    },
+    {
+      "key": "rag",
+      "title": "feat: 上传攻略资料并获得可定位原文的行程回答",
+      "category": "enhancement",
+      "proposedState": "ready-for-agent",
+      "blockedBy": [
+        "trip"
+      ],
+      "status": "published",
+      "body": "<!-- agent-platform-slice:rag:v1 -->\n\n## What to build\n\n用户导入 Markdown、TXT 或文字型 PDF，在行程会话中提问，Agent 检索资料并返回可点击的原文引用。\n\n## Acceptance criteria\n\n- [ ] 上传后展示解析、索引、成功或失败状态，支持重试与内容去重。\n- [ ] 分块保留文档、版本、章节和页码/段落位置；embedding 配置可追踪。\n- [ ] 建立向量检索基线，答案引用限定在本次证据集，点击可定位原文。\n- [ ] 资料不足时展示证据缺口；旧攻略不被当成实时营业或价格数据。\n- [ ] 删除或版本更新同步检索结果；不同工作区资料隔离。\n- [ ] 提供不少于 30 个初始标注问题与可复现检索评测。\n\n## Blocked by\n\n- #3\n\n## Scope boundaries\n\n按既定功能切片交付，不默认实现自动购票、预订或发送外部消息。需要真实 Provider 时使用用户授权凭证，并明确模拟测试与真实服务验证的区别。\n",
+      "number": 5,
+      "url": "https://github.com/dcr0coof/agent-platform/issues/5"
+    },
+    {
+      "key": "context",
+      "title": "feat: 保留长对话出行约束并展示上下文预算",
+      "category": "enhancement",
+      "proposedState": "ready-for-agent",
+      "blockedBy": [
+        "rag"
+      ],
+      "status": "published",
+      "body": "<!-- agent-platform-slice:context:v1 -->\n\n## What to build\n\n用户长时间调整行程后，Agent 仍保留已确认的预算、日期和偏好；用户可以检查上下文和修正记忆。\n\n## Acceptance criteria\n\n- [ ] 持久化历史与本次模型输入分离；规则、工具定义、历史和证据计入预算。\n- [ ] 摘要带来源，保留完整工具调用配对，超预算有明确处理。\n- [ ] 临时要求不会自动成为长期偏好；用户更正优先，可查看和删除已确认记忆。\n- [ ] 上下文面板展示所选材料、压缩信息和 token 估算，不伪造精确 usage。\n- [ ] 混合检索/重排作为可配置实验与向量基线比较，中文分词需要验证。\n- [ ] 覆盖长对话更正、摘要偏差、工具输出过长和文档指令注入场景。\n\n## Blocked by\n\n- #5\n\n## Scope boundaries\n\n按既定功能切片交付，不默认实现自动购票、预订或发送外部消息。需要真实 Provider 时使用用户授权凭证，并明确模拟测试与真实服务验证的区别。\n",
+      "number": 6,
+      "url": "https://github.com/dcr0coof/agent-platform/issues/6"
+    },
+    {
+      "key": "routes",
+      "title": "feat: 校验候选地点和路线时间并展示地图行程",
+      "category": "enhancement",
+      "proposedState": "ready-for-agent",
+      "blockedBy": [
+        "weather",
+        "context"
+      ],
+      "status": "published",
+      "body": "<!-- agent-platform-slice:routes:v1 -->\n\n## What to build\n\n用户在行程中查看实际候选地点和路线估算，Agent 根据交通方式与步行限制提示不合理安排。\n\n## Acceptance criteria\n\n- [ ] 地图/地点/路线 Provider 可替换；凭证只在服务端保存。\n- [ ] 同名地点需消歧，展示位置来源；缺失数据不冒充实测。\n- [ ] 根据交通方式、移动时间及用户约束标记过紧行程和替代方案。\n- [ ] Web 地图与行程条目联动，用户调整地点后重新检查受影响片段。\n- [ ] 使用固定 Provider 数据验证地名歧义、无路线、时间冲突与步行限制。\n\n## Blocked by\n\n- #4\n- #6\n\n## Scope boundaries\n\n按既定功能切片交付，不默认实现自动购票、预订或发送外部消息。需要真实 Provider 时使用用户授权凭证，并明确模拟测试与真实服务验证的区别。\n",
+      "number": 7,
+      "url": "https://github.com/dcr0coof/agent-platform/issues/7"
+    },
+    {
+      "key": "budget",
+      "title": "feat: 生成可编辑预算、行李清单并导出行程",
+      "category": "enhancement",
+      "proposedState": "ready-for-agent",
+      "blockedBy": [
+        "routes"
+      ],
+      "status": "published",
+      "body": "<!-- agent-platform-slice:budget:v1 -->\n\n## What to build\n\n用户基于当前行程查看预算分项和天气相关行李清单，调整后导出日程或行程文件。\n\n## Acceptance criteria\n\n- [ ] 预算区分用户输入、工具数据与粗略估算，注明币种、范围和缺项。\n- [ ] 清单结合天气和活动，用户可增删；不输出个体化医疗建议。\n- [ ] 导出前展示具体内容，确认后生成文件，不自动发送消息或购买预订。\n- [ ] 日期、时区、重复导出行为明确，导出文件可重新打开验证。\n- [ ] 前后端覆盖预算修改、约束超出、未知价格和导出失败。\n\n## Blocked by\n\n- #7\n\n## Scope boundaries\n\n按既定功能切片交付，不默认实现自动购票、预订或发送外部消息。需要真实 Provider 时使用用户授权凭证，并明确模拟测试与真实服务验证的区别。\n",
+      "number": 8,
+      "url": "https://github.com/dcr0coof/agent-platform/issues/8"
+    },
+    {
+      "key": "showcase",
+      "title": "feat: 提供出行 Agent 运行回放、评测对比和访客演示",
+      "category": "enhancement",
+      "proposedState": "ready-for-agent",
+      "blockedBy": [
+        "rag",
+        "context",
+        "budget"
+      ],
+      "status": "published",
+      "body": "<!-- agent-platform-slice:showcase:v1 -->\n\n## What to build\n\n让使用者和面试官查看真实执行步骤、证据、失败恢复及策略评测，使用公开样例完成端到端出行任务。\n\n## Acceptance criteria\n\n- [ ] 运行记录包含检索/工具步骤、模型用量、错误和数据版本；失败记录与聊天历史分离。\n- [ ] 证据不足时支持有上限的二次检索；停止条件可验证。\n- [ ] 事件回放与重新执行分开，写入动作不被重复执行。\n- [ ] 评测覆盖证据支持、无答案误答、多轮约束、行程可行性、延迟与 token 消耗；有人工抽检。\n- [ ] 访客演示使用公开/自制资料，具备访问和额度限制，明确模拟与实时数据。\n- [ ] 提供部署说明、架构图、失败案例及演示步骤，所有切片关联真实 Issue/PR。\n\n## Blocked by\n\n- #5\n- #6\n- #8\n\n## Scope boundaries\n\n按既定功能切片交付，不默认实现自动购票、预订或发送外部消息。需要真实 Provider 时使用用户授权凭证，并明确模拟测试与真实服务验证的区别。\n",
+      "number": 9,
+      "url": "https://github.com/dcr0coof/agent-platform/issues/9"
+    }
+  ]
+}
