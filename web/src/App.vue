@@ -71,6 +71,7 @@ const statusName: Record<string, string> = {
 const readableError = (e: unknown) =>
   e instanceof Error ? e.message : "连接异常，请稍后重试";
 const reloadPage = () => window.location.reload();
+const selectedTripKey = "routewise.selected-trip";
 function closeStream() {
   stream?.close();
   stream = null;
@@ -86,6 +87,11 @@ function setSession(s: Session) {
   current.value = s;
   title.value = s.title;
   form.value = { ...s.constraints };
+  try {
+    sessionStorage.setItem(selectedTripKey, s.id);
+  } catch {
+    // Storage may be disabled; the workspace must remain usable.
+  }
 }
 async function loadSession(id: string, checkDirty = true) {
   if (busy.value) return;
@@ -279,7 +285,15 @@ onMounted(async () => {
     const config = await api<{ demo: boolean }>("/bootstrap");
     demo.value = config.demo;
     await refreshList();
-    if (sessions.value.length) await loadSession(sessions.value[0].id, false);
+    let selectedID: string | null = null;
+    try {
+      selectedID = sessionStorage.getItem(selectedTripKey);
+    } catch {
+      // Fall back to the latest accessible trip when storage is unavailable.
+    }
+    const selected = sessions.value.find((s) => s.id === selectedID);
+    if (sessions.value.length)
+      await loadSession((selected || sessions.value[0]).id, false);
     else await createSession();
     ready.value = true;
   } catch (e) {

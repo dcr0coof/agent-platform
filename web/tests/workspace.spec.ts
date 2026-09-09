@@ -1,5 +1,57 @@
 import { test, expect } from "@playwright/test";
 
+test("restore the selected older trip per tab and ignore inaccessible saved IDs", async ({ page, context }) => {
+  await page.goto("/");
+  await page.getByLabel("出行名称", { exact: true }).fill("较早的杭州出行");
+  await page.getByRole("button", { name: "保存出行约束" }).click();
+  await expect(page.getByText("出行约束已保存", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "开启一段出行" }).click();
+  await expect(page.locator(".trip-item")).toHaveCount(2);
+  await page.getByRole("button", { name: /较早的杭州出行/ }).click();
+  await expect(page.getByRole("heading", { name: "较早的杭州出行", exact: true })).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "较早的杭州出行", exact: true })).toBeVisible();
+
+  const secondTab = await context.newPage();
+  await secondTab.goto("/");
+  await expect(secondTab.getByRole("heading", { name: "新的出行", exact: true })).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "较早的杭州出行", exact: true })).toBeVisible();
+  await secondTab.close();
+
+  await page.evaluate(() => sessionStorage.setItem("routewise.selected-trip", "missing-trip"));
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "新的出行", exact: true })).toBeVisible();
+
+  // Clearing ownership leaves the remembered ID behind; it must not be fetched.
+  await context.clearCookies();
+  const inaccessibleReads: string[] = [];
+  page.on("request", request => {
+    if (request.method() === "GET" && /\/api\/sessions\/.+/.test(request.url()))
+      inaccessibleReads.push(request.url());
+  });
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "新的出行", exact: true })).toBeVisible();
+  await expect(page.locator(".trip-item")).toHaveCount(1);
+  expect(inaccessibleReads).toEqual([]);
+});
+
+test("workspace remains usable when session storage is denied", async ({ page }) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(window, "sessionStorage", {
+      get() { throw new DOMException("Storage disabled", "SecurityError"); },
+    });
+  });
+  await page.goto("/");
+  await expect(page.getByRole("heading", { name: "新的出行", exact: true })).toBeVisible();
+  await page.getByLabel("出行名称", { exact: true }).fill("禁用存储仍可保存");
+  await page.getByRole("button", { name: "保存出行约束" }).click();
+  await expect(page.getByText("出行约束已保存", { exact: true })).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "禁用存储仍可保存", exact: true })).toBeVisible();
+  await expect(page.getByRole("alert")).toHaveCount(0);
+});
+
 test("save constraints, complete a run, restore on reload and isolate a second browser", async ({
   page,
   browser,
