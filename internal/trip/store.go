@@ -131,7 +131,8 @@ func (s *Store) Get(owner, id string) (Session, error) {
 	return ss, nil
 }
 func (s *Store) List(owner string) ([]Session, error) {
-	rows, err := s.db.Query("SELECT "+sessionColumns+" FROM sessions WHERE owner=? ORDER BY updated_at DESC", owner)
+	// Navigation needs metadata only; do not load or decode full chat histories.
+	rows, err := s.db.Query("SELECT id,title,constraints_json,'null',revision,created_at,updated_at FROM sessions WHERE owner=? ORDER BY updated_at DESC", owner)
 	if err != nil {
 		return nil, err
 	}
@@ -142,7 +143,6 @@ func (s *Store) List(owner string) ([]Session, error) {
 		if err != nil {
 			return nil, err
 		}
-		ss.Messages = nil
 		result = append(result, ss)
 	}
 	return result, rows.Err()

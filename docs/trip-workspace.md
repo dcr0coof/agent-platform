@@ -45,6 +45,8 @@ go run ./cmd/server
 | `POST /api/runs/{id}/cancel` | 取消任务；对已完成任务返回已有终态 |
 | `GET /api/runs/{id}/events` | SSE 订阅，可用 `Last-Event-ID` 或 `?after=N` 续读 |
 
+会话列表仅从数据库选取导航需要的元数据，`messages` 为 `null`，不加载完整聊天 JSON；完整历史仍由会话详情接口读取。历史格式损坏时列表仍可显示该会话，详情会明确报错，不会自动清空或修复历史。列表尚未分页，会话数量本身很大时仍需另行优化。
+
 约束对象示例：
 
 ```json
@@ -73,6 +75,12 @@ SSE `data` 是 `{seq,type,detail,created_at}`，`id` 等于 `seq`。终态事件
 已确认约束每轮重新进入系统上下文，完整成功历史持久保存，模型端继续按完整回合裁剪。当前没有 RAG、摘要或 token 上限；数据库持久化不能替代上下文预算。架构取舍见 [ADR 0001](adr/0001-local-trip-workspace.md)。
 
 ## 验证
+
+列表查询的小规模分配实验（2026-09-11，Windows amd64、Go 1.22.12，单会话含 1 MiB 文本历史，每个版本测量 5 次）：修改前 `4,222,864 B/op`，修改后 `2,584 B/op`。这是 Go 堆分配量，不是进程常驻内存或物理磁盘读取量；不能据此推断生产环境延迟。数据写入在计时前完成，基准不调用模型。复现命令：
+
+```bash
+go test -p=2 ./internal/trip -run '^$' -bench '^BenchmarkListLargeHistory$' -benchtime=5x -count=1 -benchmem
+```
 
 在仓库根目录执行：
 

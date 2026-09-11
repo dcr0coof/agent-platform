@@ -98,6 +98,50 @@ func startBody(message, key string, revision int) map[string]interface{} {
 	return map[string]interface{}{"message": message, "request_id": key, "revision": revision}
 }
 
+func TestSessionListDoesNotDecodeHistory(t *testing.T) {
+	h := setup(t, DemoRunner{})
+	s := h.newSession()
+	// A damaged history must not hide the navigation metadata for all trips.
+	if _, err := h.store.db.Exec("UPDATE sessions SET messages_json=? WHERE id=?", "invalid history", s.ID); err != nil {
+		t.Fatal(err)
+	}
+	var list []Session
+	h.request("GET", "/api/sessions", nil, 200, &list)
+	if len(list) != 1 || list[0].ID != s.ID || list[0].Title != s.Title || list[0].Revision != s.Revision || list[0].Messages != nil {
+		t.Fatalf("unexpected summaries: %+v", list)
+	}
+	// Detail reads still surface corruption; listing does not repair or erase it.
+	h.request("GET", "/api/sessions/"+s.ID, nil, 500, nil)
+	var raw string
+	if err := h.store.db.QueryRow("SELECT messages_json FROM sessions WHERE id=?", s.ID).Scan(&raw); err != nil || raw != "invalid history" {
+		t.Fatalf("history changed: %q, %v", raw, err)
+	}
+}
+
+func BenchmarkListLargeHistory(b *testing.B) {
+	store, err := OpenStore(filepath.Join(b.TempDir(), "trips.db"))
+	if err != nil {
+		b.Fatal(err)
+	}
+	b.Cleanup(func() { store.Close() })
+	s, err := store.Create("benchmark-owner", "large history", Constraints{})
+	if err != nil {
+		b.Fatal(err)
+	}
+	history := encode([]llm.Message{{Role: llm.RoleUser, Content: strings.Repeat("x", 1<<20)}})
+	if _, err = store.db.Exec("UPDATE sessions SET messages_json=? WHERE id=?", history, s.ID); err != nil {
+		b.Fatal(err)
+	}
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		list, err := store.List("benchmark-owner")
+		if err != nil || len(list) != 1 || list[0].Messages != nil {
+			b.Fatalf("invalid list: %v, %v", list, err)
+		}
+	}
+}
+
 func TestConversationPersistenceAndIdempotency(t *testing.T) {
 	h := setup(t, DemoRunner{Delay: time.Millisecond})
 	s := h.newSession()
