@@ -102,13 +102,14 @@ async function loadSession(id: string, checkDirty = true) {
   )
     return;
   const ticket = ++selection;
-  closeStream();
+  busy.value = true;
   error.value = "";
   notice.value = "";
   sideOpen.value = false;
   try {
     const s = await api<Session>("/sessions/" + id);
     if (ticket !== selection) return;
+    closeStream();
     setSession(s);
     run.value = s.active_run || null;
     events.value = s.active_run?.events || [];
@@ -118,6 +119,8 @@ async function loadSession(id: string, checkDirty = true) {
     await scrollDown();
   } catch (e) {
     if (ticket === selection) error.value = readableError(e);
+  } finally {
+    if (ticket === selection) busy.value = false;
   }
 }
 async function createSession() {

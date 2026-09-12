@@ -1,5 +1,57 @@
 import { test, expect } from "@playwright/test";
 
+for (const fails of [false, true]) {
+  test(`trip switch locks mutations and recovers on ${fails ? "failure" : "success"}`, async ({ page }) => {
+    await page.goto("/");
+    await page.getByLabel("出行名称", { exact: true }).fill("目标出行");
+    await page.getByRole("button", { name: "保存出行约束" }).click();
+    await expect(page.getByText("出行约束已保存", { exact: true })).toBeVisible();
+    const list = await (await page.request.get("/api/sessions")).json();
+    const target = list[0].id;
+    await page.getByRole("button", { name: "开启一段出行" }).click();
+    await expect(page.locator(".trip-item")).toHaveCount(2);
+    await page.getByLabel("出行消息").fill("保留原会话的内容");
+    if (fails) {
+      await page.getByRole("button", { name: "发送消息" }).click();
+      await expect(page.getByRole("button", { name: "停止任务" })).toBeVisible();
+      await page.getByRole("tab", { name: "出行约束" }).click();
+    }
+
+    let release!: () => void;
+    let reached!: () => void;
+    const gate = new Promise<void>(resolve => { release = resolve; });
+    const intercepted = new Promise<void>(resolve => { reached = resolve; });
+    await page.route(`**/api/sessions/${target}`, async route => {
+      reached();
+      await gate;
+      if (fails) await route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ error: "加载目标失败" }) });
+      else await route.continue();
+    });
+    try {
+      await page.getByRole("button", { name: /目标出行/ }).click();
+      await intercepted;
+      await expect(page.getByLabel("出行名称", { exact: true })).toBeDisabled();
+      await expect(page.getByLabel("出行消息")).toBeDisabled();
+      await expect(page.getByRole("button", { name: "开启一段出行" })).toBeDisabled();
+      if (fails) {
+        // Keep observing the original run until the target actually loads.
+        await expect(page.locator(".message.assistant")).toContainText("本地演示");
+      } else {
+        await expect(page.getByRole("button", { name: "发送消息" })).toBeDisabled();
+      }
+    } finally {
+      release();
+    }
+    await expect(page.getByRole("heading", { name: fails ? "新的出行" : "目标出行", exact: true })).toBeVisible();
+    await expect(page.getByLabel("出行名称", { exact: true })).toBeEnabled();
+    if (fails) await expect(page.getByRole("alert")).toContainText("加载目标失败");
+    await page.getByLabel("出行消息").fill("加载结束后继续");
+    await page.getByRole("button", { name: "发送消息" }).click();
+    await expect(page.locator(".message.user").last()).toContainText("加载结束后继续");
+    await expect(page.locator(".message.assistant")).toHaveCount(fails ? 2 : 1);
+  });
+}
+
 test("restore the selected older trip per tab and ignore inaccessible saved IDs", async ({ page, context }) => {
   await page.goto("/");
   await page.getByLabel("出行名称", { exact: true }).fill("较早的杭州出行");
