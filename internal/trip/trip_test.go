@@ -98,6 +98,37 @@ func startBody(message, key string, revision int) map[string]interface{} {
 	return map[string]interface{}{"message": message, "request_id": key, "revision": revision}
 }
 
+func TestIdempotencyAtCapacity(t *testing.T) {
+	h := setup(t, runnerFunc(func(ctx context.Context, _ Session, _ string, _ func(string, string) error) ([]llm.Message, error) {
+		<-ctx.Done()
+		return nil, ctx.Err()
+	}))
+	h.service.timeout = time.Minute
+	var first Session
+	var original Run
+	for i := 0; i < 4; i++ {
+		s := h.newSession()
+		var r Run
+		h.request("POST", "/api/sessions/"+s.ID+"/runs", startBody("original", "capacity-key", s.Revision), 202, &r)
+		if i == 0 {
+			first, original = s, r
+		}
+	}
+	path := "/api/sessions/" + first.ID + "/runs"
+	var retry Run
+	h.request("POST", path, startBody("original", "capacity-key", first.Revision), 202, &retry)
+	if retry.ID != original.ID {
+		t.Fatalf("retry created another run: %s != %s", retry.ID, original.ID)
+	}
+	h.request("POST", path, startBody("changed", "capacity-key", first.Revision), 409, nil)
+	unused := h.newSession()
+	h.request("POST", "/api/sessions/"+unused.ID+"/runs", startBody("new", "capacity-key", unused.Revision), 429, nil)
+	var count int
+	if err := h.store.db.QueryRow("SELECT count(*) FROM runs").Scan(&count); err != nil || count != 4 {
+		t.Fatalf("rejected requests must not create runs: count=%d, err=%v", count, err)
+	}
+}
+
 func TestSessionListDoesNotDecodeHistory(t *testing.T) {
 	h := setup(t, DemoRunner{})
 	s := h.newSession()

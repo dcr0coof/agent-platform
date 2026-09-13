@@ -2,6 +2,7 @@ package trip
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -115,11 +116,18 @@ func (s *Service) Start(owner, sid, input, requestID string, revision int) (Run,
 	}
 	// Preserve idempotent retries even if the global worker limit has been hit.
 	if len(s.running) >= 4 {
-		var id string
-		if err = s.Store.db.QueryRow("SELECT id FROM runs WHERE session_id=? AND request_id=? AND input=?", sid, requestID, input).Scan(&id); err == nil {
-			return s.Store.Run(owner, id)
+		var id, priorInput string
+		err = s.Store.db.QueryRow("SELECT id,input FROM runs WHERE session_id=? AND request_id=?", sid, requestID).Scan(&id, &priorInput)
+		if errors.Is(err, sql.ErrNoRows) {
+			return Run{}, ErrCapacity
 		}
-		return Run{}, ErrCapacity
+		if err != nil {
+			return Run{}, err
+		}
+		if priorInput != input {
+			return Run{}, ErrConflict
+		}
+		return s.Store.Run(owner, id)
 	}
 	run, fresh, err := s.Store.Start(owner, sid, input, requestID, revision)
 	if err != nil || !fresh {
