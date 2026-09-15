@@ -27,7 +27,7 @@ go run ./cmd/server
 
 天气工具仅在配置天气密钥和专属 API Host 后启用。当前模型回复为整段返回；SSE 流式更新的是执行状态，不是 token。天气证据卡和天气驱动的替代活动留在 Issue #4。
 
-可选参数：`-listen 127.0.0.1:8080`、`-db data/trips.db`、`-web-dir web/dist`、`-timeout 2m`、`-config configs/config.yaml`。演示与真实模式可使用不同数据库文件。每个文件只能供一个服务实例使用。停止服务后可复制数据库备份；运行中的 WAL 数据库不应只复制主文件。
+可选参数：`-listen 127.0.0.1:8080`、`-db data/trips.db`、`-web-dir web/dist`、`-timeout 2m`、`-config configs/config.yaml`。演示与真实模式可使用不同数据库文件。数据库应放在本机磁盘，每个文件只能供一个服务实例使用。SQLite 独占锁会阻止第二个实例和外部 SQLite 查询工具访问；出现 `SQLITE_BUSY` / `database is locked` 时先停止占用实例，或为新实例指定不同的 `-db` 文件。正常关闭及进程退出后锁会释放。停止服务后可复制数据库备份；运行中的 WAL 数据库不应只复制主文件。
 
 开发热更新：一个终端运行 `go run ./cmd/server -demo -dev-origin http://127.0.0.1:5173`，另一个运行 `npm --prefix web run dev`，浏览器使用 <http://127.0.0.1:5173>。Vite 将 `/api` 转发到 Go 的 8080 端口。
 

@@ -8,7 +8,9 @@ CLI 已有完整回合记忆与工具调度，但浏览器无法创建出行、�
 
 ## 决定
 
-复用 Go Agent，增加 HTTP 服务及 Vue 3 / TypeScript 界面。使用 `modernc.org/sqlite`，保持 Go 1.22、Windows 和无 CGO 环境可用。SQLite 使用 WAL、单连接和事务。每个数据库文件只由一个服务进程使用；目前没有跨进程锁或任务租约，不能让不同端口的实例共享文件。
+复用 Go Agent，增加 HTTP 服务及 Vue 3 / TypeScript 界面。使用 `modernc.org/sqlite`，保持 Go 1.22、Windows 和无 CGO 环境可用。SQLite 使用 WAL、单连接和事务。每个数据库文件只由一个服务进程使用。
+
+2026-09-15 补充：在首次 WAL 访问及重启恢复之前设置 `locking_mode=EXCLUSIVE`，保持唯一连接直到关闭。第二个实例无法打开被占用的数据库，从而不能误将原实例的活动任务标为重启失败；关闭或进程退出后可重新打开并恢复遗留任务。此行为依据 [SQLite locking_mode 文档](https://www.sqlite.org/pragma.html#pragma_locking_mode) 和 [WAL 独占访问说明](https://www.sqlite.org/wal.html#use_of_wal_without_shared_memory)。采用 SQLite 原生文件锁，不增加锁文件或依赖；仅支持本机数据库文件，不提供跨主机任务租约或多实例调度。外部 SQLite 查询工具也会被阻止访问，需先停止服务。
 
 `sessions` 保存归属、已确认约束、版本号和完整成功历史；`runs` 保存任务输入、幂等键、状态和错误；`events` 保存有序操作事件。数据库中的完整历史与发送给模型的近期完整回合窗口分开。用户在聊天中提出的偏好变更不会被静默写成表单中的已确认条件。
 
@@ -28,4 +30,4 @@ SQLite 减少演示部署依赖，代价是单服务写入、没有多实例调�
 
 ## 验证
 
-Go 测试覆盖持久化恢复、版本冲突、幂等请求、浏览器隔离、取消、失败不写历史、完整工具回合与 SSE 续读。Playwright 覆盖编辑后继续对话、刷新恢复、独立浏览器与移动端。真实付费 Provider 调用不作为自动化测试前提。
+Go 测试覆盖持久化恢复、版本冲突、幂等请求、浏览器隔离、取消、失败不写历史、完整工具回合与 SSE 续读。独立子进程测试验证第二实例被拒绝、原实例仍可读写，以及正常关闭和未调用 Close 的进程退出后成功历史保留、遗留任务恢复；不模拟断电或磁盘故障。Playwright 覆盖编辑后继续对话、刷新恢复、独立浏览器与移动端。真实付费 Provider 调用不作为自动化测试前提。

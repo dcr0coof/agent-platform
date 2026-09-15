@@ -26,8 +26,11 @@ func OpenStore(path string) (*Store, error) {
 		return nil, err
 	}
 	db.SetMaxOpenConns(1)
+	db.SetMaxIdleConns(1) // Retain the connection and its exclusive lock until Close.
 	s := &Store{db: db}
-	_, err = db.Exec(`PRAGMA busy_timeout=5000; PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON;
+	// Acquire exclusive ownership before WAL access and restart recovery, so a
+	// second process cannot mark this owner's live runs as interrupted.
+	_, err = db.Exec(`PRAGMA busy_timeout=5000; PRAGMA locking_mode=EXCLUSIVE; PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON;
  CREATE TABLE IF NOT EXISTS sessions (
  id TEXT PRIMARY KEY,owner TEXT NOT NULL,title TEXT NOT NULL,constraints_json TEXT NOT NULL,
  messages_json TEXT NOT NULL,revision INTEGER NOT NULL,created_at TEXT NOT NULL,updated_at TEXT NOT NULL);
