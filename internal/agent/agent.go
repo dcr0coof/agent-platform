@@ -52,6 +52,18 @@ func (a *Agent) Clear() {
 
 // Run 处理一条用户消息，返回最终文本回复
 func (a *Agent) Run(ctx context.Context, userMessage string) (string, error) {
+	return a.RunObserved(ctx, userMessage, nil)
+}
+
+// RunObserved reports observable operations, never private model reasoning.
+// Returning an observer error stops the turn before history is committed.
+func (a *Agent) RunObserved(ctx context.Context, userMessage string, observe func(kind, detail string) error) (string, error) {
+	emit := func(kind, detail string) error {
+		if observe != nil {
+			return observe(kind, detail)
+		}
+		return nil
+	}
 	if strings.TrimSpace(userMessage) == "" {
 		return "", fmt.Errorf("用户消息不能为空")
 	}
@@ -77,6 +89,9 @@ func (a *Agent) Run(ctx context.Context, userMessage string) (string, error) {
 			return "", err
 		}
 
+		if err := emit("model.started", fmt.Sprintf("第 %d 次模型请求", i+1)); err != nil {
+			return "", err
+		}
 		resp, err := a.llmClient.Chat(ctx, messages, toolDefs)
 		if err != nil {
 			return "", fmt.Errorf("LLM 调用失败: %w", err)
@@ -86,6 +101,9 @@ func (a *Agent) Run(ctx context.Context, userMessage string) (string, error) {
 		}
 		if resp == nil {
 			return "", fmt.Errorf("LLM 返回空响应")
+		}
+		if err := emit("model.completed", "模型已返回响应"); err != nil {
+			return "", err
 		}
 
 		// LLM 返回工具调用
@@ -109,12 +127,18 @@ func (a *Agent) Run(ctx context.Context, userMessage string) (string, error) {
 				if err := ctx.Err(); err != nil {
 					return "", err
 				}
+				if err := emit("tool.started", tc.Function.Name); err != nil {
+					return "", err
+				}
 				toolResult, err := executeTool(ctx, a.tools, tc)
 				if ctx.Err() != nil {
 					return "", ctx.Err()
 				}
 				if err != nil {
 					toolResult = fmt.Sprintf("工具执行失败: %v", err)
+				}
+				if err := emit("tool.completed", tc.Function.Name); err != nil {
+					return "", err
 				}
 				messages = append(messages, llm.Message{
 					Role:       llm.RoleTool,
