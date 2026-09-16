@@ -50,13 +50,29 @@ export async function api<T>(
   path: string,
   options: RequestInit = {},
 ): Promise<T> {
-  const response = await fetch("/api" + path, {
-    credentials: "same-origin",
-    ...options,
-    headers: { "Content-Type": "application/json", ...options.headers },
-  });
-  const body = await response.json();
-  if (!response.ok)
-    throw new Error(body.error || `请求失败 (${response.status})`);
-  return body as T;
+  const timeout = new AbortController();
+  const signal = options.signal
+    ? AbortSignal.any([options.signal, timeout.signal])
+    : timeout.signal;
+  const timer = setTimeout(() => timeout.abort(new Error(
+    "请求超时，请检查连接。超时不代表服务端操作已取消",
+  )), 15_000);
+  try {
+    const response = await fetch("/api" + path, {
+      credentials: "same-origin",
+      ...options,
+      signal,
+      headers: { "Content-Type": "application/json", ...options.headers },
+    });
+    const body = await response.json();
+    if (!response.ok)
+      throw new Error(body.error || `请求失败 (${response.status})`);
+    return body as T;
+  } catch (error) {
+    // Body consumption may throw AbortError instead of the original reason.
+    if (signal.aborted) throw signal.reason;
+    throw error;
+  } finally {
+    clearTimeout(timer);
+  }
 }
