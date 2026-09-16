@@ -1,6 +1,6 @@
 # 天气感知的出行与生活规划 Agent
 
-状态：已确定的产品方向；以下功能为待实施范围，不代表已上线。
+状态：CLI 核心和出行工作台已在功能分支实现；天气备选、RAG、上下文预算等后续切片仍待实施。功能完成、PR 审查与主分支合并是不同状态。
 
 ## 产品目标
 
@@ -45,7 +45,7 @@
 
 ## 底层与前端
 
-Go 保留 Agent Runtime、HTTP/SSE、工具编排、Context Builder 和检索接口。PostgreSQL/pgvector 存会话、出行约束、文档与向量；初期单服务与本地文件存储，按实际需求扩展。
+Go 保留 Agent Runtime、HTTP/SSE、工具编排，并计划增加 Context Builder 和检索接口。首个 Web 切片使用纯 Go SQLite 持久化会话、约束和运行事件，方便无需 Docker 的本机演示；一个数据库只允许一个服务进程。PostgreSQL/pgvector 在文档检索或多实例部署阶段评估迁移。当前取舍见 [ADR 0001](adr/0001-local-trip-workspace.md)，运行说明见 [工作台文档](trip-workspace.md)。
 
 Web 使用 Vue 3 + TypeScript：左侧资料和出行会话，中间行程与对话，右侧地图、证据和运行详情。普通用户优先看到结果与可编辑约束，技术面板按需展开。
 

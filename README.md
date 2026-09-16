@@ -2,7 +2,21 @@
 
 用 Go 实现的 AI Agent 实战项目：命令行多轮对话、工具调用、短期记忆。默认连接 DeepSeek，也可以配置提供 Chat Completions 工具调用协议的服务。
 
-当前已实现 CLI 核心引擎及天气工具。HTTP API、SSE、持久记忆、摘要、小程序和计费仍属于后续规划，仓库中尚无 TypeScript 前端。
+当前已实现 CLI 核心引擎及天气工具，以及「行迹」Vue 3 + TypeScript 出行工作台：可编辑约束、SQLite 持久会话、SSE 执行事件、取消和断线续读。攻略 RAG、token 预算与摘要、地图和行程生成仍在规划中。
+
+## Web 工作台
+
+需要 Go 1.22.12+、Node.js 22.12+。从项目根目录运行：
+
+```bash
+npm --prefix web ci
+npm --prefix web run build
+go run ./cmd/server -demo
+```
+
+打开 <http://127.0.0.1:8080>。演示模式明确标记为规则回复，不访问模型或天气服务；可体验创建出行、编辑条件、发送、取消和刷新恢复。真实模型模式设置下文的 `AGENT_LLM_API_KEY` 后运行 `go run ./cmd/server`；天气沿用下文配置。
+
+本版仅绑定本机地址，数据默认保存在 `data/trips.db`，每个数据库文件只运行一个服务实例。浏览器 Cookie 隔离数据，不是多用户账号系统；清除 Cookie 后无法通过界面访问原会话。详细启动、API、测试和限制见 [工作台说明](docs/trip-workspace.md)。
 
 ## 快速开始
 
@@ -69,23 +83,26 @@ API Host 从和风天气控制台获取。官方说明旧共享域名从 2026 �
 
 - 每次 `Run` 在局部历史中完成“用户 → 模型 → 工具 → 模型”循环，成功后才提交本轮消息。请求失败、取消或迭代耗尽时保留之前的历史。
 - 记忆按完整用户回合淘汰。单个回合超过 `max_messages` 时完整保留，下一回合到来后可以整体淘汰；该配置是软限制，不是 token 上限。
-- 同一个 Agent 的 `Run` 串行执行，等待锁时支持取消。`SetSystemPrompt` 和 `Clear` 与运行互斥；未来多会话接入时应每会话创建独立 Agent 和 Memory。
+- 同一个 Agent 的 `Run` 串行执行，等待锁时支持取消。`SetSystemPrompt` 和 `Clear` 与运行互斥；Web 为每轮创建独立 Agent 和 Memory，从所属会话加载完整回合窗口。
 - 工具失败、未知工具、无效参数和工具 panic 会转换为工具结果，让模型有机会解释或纠正。无效工具调用 ID、空回答和被截断的回答作为请求失败处理。
 - 工具按模型返回顺序执行。失败回合不写记忆，但已经执行的工具副作用不能回滚；未来增加写入类工具时需要幂等性设计。
 - HTTP 错误明确报告状态码；LLM 响应限制为 4 MiB，天气解压后的响应限制为 1 MiB。请求不自动重试，不跟随重定向。
-- 会话仅保存在内存中，程序退出后丢失。计算器使用浮点数，支持四则运算、正负号及括号，不保证任意精度。
+- CLI 会话仅保存在内存中，退出后丢失；Web 保存完整成功回合，运行事件单独持久化，失败或取消不污染聊天历史。计算器使用浮点数，支持四则运算、正负号及括号，不保证任意精度。
 
 ## 项目结构
 
 ```text
 cmd/agent/             CLI 入口和端到端测试
+cmd/server/            本机 HTTP 服务入口
 internal/agent/        对话循环、工具调度和会话互斥
+internal/trip/         会话、约束、SQLite、运行生命周期和 SSE
 internal/llm/          消息协议、客户端接口和 HTTP 实现
 internal/tool/         工具接口、注册表
 internal/tool/builtin/ 计算器、当前日期时间、和风天气
 internal/memory/       保留完整回合的内存窗口
 internal/config/       YAML、环境变量和启动校验
 configs/              默认配置
+web/                  Vue 3 + TypeScript 工作台与 Playwright 测试
 docs/                 代码审查、优化说明和后续路线
 .github/workflows/     Windows / Linux 检查
 ```
@@ -105,7 +122,7 @@ go test -race ./...
 
 详细分析与后续优先级见 [项目审查报告](docs/review-and-roadmap.md)。
 
-后续产品方向为天气感知的出行与生活规划 Agent，覆盖行程约束、天气备选、攻略 RAG、路线与预算。具体阶段见 [出行 Agent 路线](docs/travel-agent-roadmap.md)。这些扩展尚未实现；每个功能通过 GitHub Issue 和关联 PR 记录实现与验证，开发流程见 [AGENTS.md](AGENTS.md)。
+后续产品方向为天气感知的出行与生活规划 Agent。出行会话已实现，下一阶段覆盖天气备选、攻略 RAG、上下文预算及地图路线。具体阶段见 [出行 Agent 路线](docs/travel-agent-roadmap.md)；每个功能通过 GitHub Issue 和关联 PR 记录实现与验证，开发流程见 [AGENTS.md](AGENTS.md)。
 
 ## License
 
