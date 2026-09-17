@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"sort"
 	"strings"
 	"time"
 )
@@ -34,7 +35,8 @@ func (w *Weather) Name() string { return "weather" }
 func (w *Weather) Description() string {
 	return "查询指定城市的实时天气或未来天气预报。" +
 		"参数 city 可以是城市中文名（如'北京'、'上海'）或城市 ID。" +
-		"参数 type 可选 'now'（实时天气，默认）或 'forecast'（3天预报）。"
+		"参数 type 可选 'now'（实时天气，默认）或 'forecast'（3天预报）。" +
+		"查询指定日期必须传 date（YYYY-MM-DD），此时默认 forecast；只能使用返回中覆盖该日期的数据，未覆盖则天气未知。"
 }
 
 func (w *Weather) Parameters() map[string]interface{} {
@@ -49,6 +51,10 @@ func (w *Weather) Parameters() map[string]interface{} {
 				"type":        "string",
 				"description": "查询类型：now（实时天气）或 forecast（3天预报）",
 				"enum":        []string{"now", "forecast"},
+			},
+			"date": map[string]interface{}{
+				"type":        "string",
+				"description": "目的地的预报日期 YYYY-MM-DD；仅用于 forecast，未覆盖时返回未知。不传则返回三天接口提供的全部日期。",
 			},
 		},
 		"required": []string{"city"},
@@ -66,12 +72,24 @@ func (w *Weather) Execute(ctx context.Context, params map[string]interface{}) (s
 	}
 
 	queryType := "now"
+	date := ""
+	if value, exists := params["date"]; exists {
+		var valid bool
+		date, valid = value.(string)
+		if _, err := time.Parse("2006-01-02", date); !valid || err != nil {
+			return "", fmt.Errorf("date 必须是有效日期，格式为 YYYY-MM-DD")
+		}
+		queryType = "forecast"
+	}
 	if value, exists := params["type"]; exists {
 		var valid bool
 		queryType, valid = value.(string)
 		if !valid || (queryType != "now" && queryType != "forecast") {
 			return "", fmt.Errorf("type 必须是 now 或 forecast")
 		}
+	}
+	if date != "" && queryType != "forecast" {
+		return "", fmt.Errorf("指定 date 时 type 必须是 forecast，不能使用实时天气代替预报")
 	}
 	if w.baseURL == "" {
 		return "", fmt.Errorf("请配置和风天气专属 API Host（AGENT_WEATHER_BASE_URL）")
@@ -86,7 +104,7 @@ func (w *Weather) Execute(ctx context.Context, params map[string]interface{}) (s
 	// 2. 查询天气
 	switch queryType {
 	case "forecast":
-		return w.forecast(ctx, locationID)
+		return w.forecast(ctx, locationID, date)
 	default:
 		return w.now(ctx, locationID)
 	}
@@ -159,17 +177,19 @@ func (w *Weather) now(ctx context.Context, locationID string) (string, error) {
 }
 
 // forecast 3天预报
-func (w *Weather) forecast(ctx context.Context, locationID string) (string, error) {
+func (w *Weather) forecast(ctx context.Context, locationID, date string) (string, error) {
 	u := w.endpoint("/v7/weather/3d", locationID)
 
 	data, err := w.doGet(ctx, u)
 	if err != nil {
 		return "", err
 	}
+	fetchedAt := time.Now().UTC().Format(time.RFC3339)
 
 	var result struct {
-		Code  string `json:"code"`
-		Daily []struct {
+		Code       string `json:"code"`
+		UpdateTime string `json:"updateTime"`
+		Daily      []struct {
 			FxDate       string `json:"fxDate"`
 			TempMax      string `json:"tempMax"`
 			TempMin      string `json:"tempMin"`
@@ -186,12 +206,41 @@ func (w *Weather) forecast(ctx context.Context, locationID string) (string, erro
 		return "", fmt.Errorf("预报查询失败（code=%s）", result.Code)
 	}
 
-	output := "【3天天气预报】\n"
+	sort.Slice(result.Daily, func(i, j int) bool { return result.Daily[i].FxDate < result.Daily[j].FxDate })
+	dates := make([]string, 0, len(result.Daily))
+	for i, d := range result.Daily {
+		if _, err := time.Parse("2006-01-02", d.FxDate); err != nil {
+			return "", fmt.Errorf("预报响应包含无效日期")
+		}
+		if i > 0 && d.FxDate == result.Daily[i-1].FxDate {
+			return "", fmt.Errorf("预报响应包含重复日期")
+		}
+		if strings.TrimSpace(d.TempMin) == "" || strings.TrimSpace(d.TempMax) == "" || strings.TrimSpace(d.TextDay) == "" {
+			return "", fmt.Errorf("预报响应缺少温度或天气描述")
+		}
+		dates = append(dates, d.FxDate)
+	}
+	if result.UpdateTime == "" {
+		result.UpdateTime = "未提供，无法确认数据新鲜度"
+	}
+	var output strings.Builder
+	fmt.Fprintf(&output, "【3天天气预报】\n来源：QWeather\nLocation ID：%s\n获取时间：%s\n预报更新时间：%s\n可用预报日期：%s\n", locationID, fetchedAt, result.UpdateTime, strings.Join(dates, "、"))
+	if date != "" {
+		fmt.Fprintf(&output, "请求日期：%s\n", date)
+	}
+	matched := false
 	for _, d := range result.Daily {
-		output += fmt.Sprintf("  %s：%s，%s~%s°C，%s风%s级\n",
+		if date != "" && date != d.FxDate {
+			continue
+		}
+		matched = true
+		fmt.Fprintf(&output, "  %s：%s，%s~%s°C，%s风%s级\n",
 			d.FxDate, d.TextDay, d.TempMin, d.TempMax, d.WindDirDay, d.WindScaleDay)
 	}
-	return output, nil
+	if !matched {
+		output.WriteString("天气未知：请求日期未被本次预报覆盖，不能用其他日期的天气推断。\n")
+	}
+	return output.String(), nil
 }
 
 func (w *Weather) doGet(ctx context.Context, url string) ([]byte, error) {
