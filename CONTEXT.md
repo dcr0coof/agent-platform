@@ -6,6 +6,8 @@ A weather-aware travel and daily planning assistant, implemented as a Go Agent r
 
 Current implementation: CLI, calculator, datetime, QWeather tool, complete-turn buffer memory, and a local Vue/TypeScript trip workspace backed by Go HTTP and SQLite. The workspace persists editable constraints and complete successful turns, isolates browser owners, and supports durable SSE run events, idempotent starts and cancellation. An explicitly labelled deterministic demo requires no external services. RAG, token budgeting/summaries, maps and itinerary generation remain planned. See `docs/trip-workspace.md` and `docs/adr/0001-local-trip-workspace.md` for the current single-process, local-only boundary.
 
+The weather tool accepts an optional destination forecast date, checks membership in the actual returned dates, and reports unknown when absent. Forecast text includes provider/location and retrieval/update timestamps; this is not yet a weather evidence card, a freshness guarantee, or an activity recommendation. See `docs/weather-date-coverage.md` for the bounded Issue #4 slice and the existing provider API migration dependency.
+
 ## Vocabulary
 
 - **Workspace**: isolation boundary for documents, preferences, conversations and runs.

@@ -55,6 +55,9 @@ func TestWeatherLookupAndQueries(t *testing.T) {
 			if err != nil || !strings.Contains(result, "晴") || len(paths) != 2 {
 				t.Fatalf("weather failed: %s %v %v", result, err, paths)
 			}
+			if kind == "forecast" && !strings.Contains(result, "未提供，无法确认数据新鲜度") {
+				t.Fatal("missing provider timestamp was not disclosed")
+			}
 		})
 	}
 }
@@ -63,6 +66,9 @@ func TestWeatherRejectsBadInputBeforeNetwork(t *testing.T) {
 	w := NewWeather("key", "http://127.0.0.1:1")
 	for _, params := range []map[string]interface{}{
 		nil, {"city": " "}, {"city": "北京", "type": "invalid"}, {"city": "北京", "type": 3},
+		{"city": "北京", "date": "2026-02-29"}, {"city": "北京", "date": "2026-9-17"},
+		{"city": "北京", "date": ""}, {"city": "北京", "date": 20260917},
+		{"city": "北京", "date": "2026-09-17", "type": "now"},
 	} {
 		_, err := w.Execute(context.Background(), params)
 		if err == nil || strings.Contains(err.Error(), "请求失败") {
