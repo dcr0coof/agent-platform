@@ -32,6 +32,14 @@ go test ./internal/trip -run TestTripWeatherDateIsPreservedThroughToolTurn
 
 固定本地 HTTP 数据覆盖首尾日期、范围前后、中间缺日、闰年、乱序、非法/重复日期、缺失字段和取消。工作台 HTTP 集成测试通过模拟模型触发真实工具代码，确认日期参数出现在模型工具定义中，未覆盖结果回灌模型，成功回合的工具调用与结果配对持久化。模拟模型的最终措辞不作为真实模型遵从度的证据；没有使用真实付费天气或模型账号。
 
-## Provider 协议依赖
+## 天气观测证据（2026-09-18，Issue #14）
+
+`type: "now"` 现在输出“天气观测”及来源、Location ID、获取时间、API 更新时间和观测时间。获取时间是本次收到响应的本机 UTC 时间，`updateTime` 是 API 更新，`now.obsTime` 是实际观测时间；三者不可互相替代。按获取时间减观测时间显示年龄，较旧观测不会因重新获取而变新。
+
+Provider 时间支持带时区的秒精度 RFC3339 及官方例子中的分钟精度。缺失或非法时间明确未知，未来时间标为时钟/数据异常；异常观测年龄保持未知，不以负数表示新鲜。原气象字段仍保留，作为该次观测记录，而非当前状态保证。
+
+本切片不设通用过期阈值，不保证 API 更新时间与观测时间一致，也不证明真实服务联调成功；固定 HTTP 和时钟样例覆盖时区、旧观测及异常字段。字段语义参见 2026-09-18 核对的 [QWeather Weather Now v7 文档](https://dev.qweather.com/en/docs/api/weather/weather-now-webapi-v7/)。
+
+### Provider 迁移
 
 2026-09-17 核对 [QWeather 城市版日预报文档](https://dev.qweather.com/en/docs/api/weather/weather-daily-forecast-webapi-v7/)：当前 `/v7/weather/{days}` 支持 `3d` 等天数参数，`fxDate` 是预报日期，`updateTime` 是 API 更新时间。官方已提示 v7 将弃用，并指向 v1。本次保持既有 v7 配置兼容；后续需独立迁移经纬度、认证和响应结构，结合用户订阅联调后再替换，不能直接把新路径套到旧解析器上。
