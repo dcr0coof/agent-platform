@@ -149,9 +149,12 @@ func (w *Weather) now(ctx context.Context, locationID string) (string, error) {
 		return "", err
 	}
 
+	fetchedAt := time.Now().UTC()
 	var result struct {
-		Code string `json:"code"`
-		Now  struct {
+		Code       string `json:"code"`
+		UpdateTime string `json:"updateTime"`
+		Now        struct {
+			ObsTime   string `json:"obsTime"`
 			Temp      string `json:"temp"`
 			FeelsLike string `json:"feelsLike"`
 			Text      string `json:"text"`
@@ -171,9 +174,40 @@ func (w *Weather) now(ctx context.Context, locationID string) (string, error) {
 		return "", fmt.Errorf("天气响应缺少温度或天气描述")
 	}
 
-	return fmt.Sprintf("【实时天气】温度：%s°C（体感 %s°C），天气：%s，风向：%s，风力：%s级，湿度：%s%%",
+	return fmt.Sprintf("【天气观测】\n%s温度：%s°C（体感 %s°C），天气：%s，风向：%s，风力：%s级，湿度：%s%%",
+		observationEvidence(locationID, fetchedAt, result.UpdateTime, result.Now.ObsTime),
 		result.Now.Temp, result.Now.FeelsLike, result.Now.Text,
 		result.Now.WindDir, result.Now.WindScale, result.Now.Humidity), nil
+}
+
+func observationEvidence(locationID string, fetchedAt time.Time, updateTime, obsTime string) string {
+	updated, _ := providerTimeLabel(updateTime, fetchedAt)
+	observed, obs := providerTimeLabel(obsTime, fetchedAt)
+	age := "未知，不能确认当前天气"
+	if !obs.IsZero() && !obs.After(fetchedAt) {
+		age = fetchedAt.Sub(obs).Truncate(time.Second).String() + "（相对获取时间，不保证当前仍相同）"
+	}
+	return fmt.Sprintf("来源：QWeather\nLocation ID：%s\n获取时间：%s\nAPI 更新时间：%s\n观测时间：%s\n观测年龄：%s\n",
+		locationID, fetchedAt.UTC().Format(time.RFC3339), updated, observed, age)
+}
+
+// QWeather also documents ISO timestamps without seconds; retain the zone.
+func providerTimeLabel(value string, fetchedAt time.Time) (string, time.Time) {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return "未提供，时间未知", time.Time{}
+	}
+	for _, layout := range []string{time.RFC3339, "2006-01-02T15:04Z07:00"} {
+		parsed, err := time.Parse(layout, value)
+		if err != nil || parsed.IsZero() {
+			continue
+		}
+		if parsed.After(fetchedAt) {
+			return value + "（晚于获取时间，时钟或数据异常）", parsed
+		}
+		return value, parsed
+	}
+	return "格式无效，时间未知", time.Time{}
 }
 
 // forecast 3天预报

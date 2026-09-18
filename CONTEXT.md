@@ -8,6 +8,8 @@ Current implementation: CLI, calculator, datetime, QWeather tool, complete-turn 
 
 The weather tool accepts an optional destination forecast date, checks membership in the actual returned dates, and reports unknown when absent. Forecast text includes provider/location and retrieval/update timestamps; this is not yet a weather evidence card, a freshness guarantee, or an activity recommendation. See `docs/weather-date-coverage.md` for the bounded Issue #4 slice and the existing provider API migration dependency.
 
+The current-observation path also returns provider/location, retrieval time, API update time, observation time and observation age. Missing, invalid or future observation timestamps do not become fresh evidence; no universal weather expiry threshold is imposed. This is the bounded Issue #14 slice, with fixed HTTP tests rather than a live provider verification.
+
 ## Vocabulary
 
 - **Workspace**: isolation boundary for documents, preferences, conversations and runs.
