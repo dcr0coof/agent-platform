@@ -12,6 +12,8 @@ The current-observation path also returns provider/location, retrieval time, API
 
 ## Vocabulary
 
+The Web workspace now lets users expand paired raw weather tool results beside each successful turn's final answer. Association uses weather tool-call IDs within that user turn, with escaped text restored from saved history. This is source inspection, not a structured weather card or proof that an answer follows the evidence.
+
 - **Workspace**: isolation boundary for documents, preferences, conversations and runs.
 - **Trip**: destination(s), dates, participants and planning constraints; editable by the user.
 - **Itinerary**: a versioned draft schedule. A route estimate or itinerary is not a confirmed booking.

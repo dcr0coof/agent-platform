@@ -1144,3 +1144,17 @@ label .form-row input {
     transition: none !important;
   }
 }
+
+.weather-evidence {
+  margin-top: 16px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 12px 14px;
+  background: #f3f6f2;
+  max-width: 100%;
+}
+.weather-evidence summary { cursor: pointer; font-weight: 600; }
+.weather-evidence summary:focus-visible { outline: 2px solid #38644b; outline-offset: 4px; }
+.weather-evidence p { font-size: 12px; color: #526253; }
+.weather-evidence pre { white-space: pre-wrap; overflow-wrap: anywhere; font: 12px/1.7 monospace; }
+.message > div:last-child { min-width: 0; }

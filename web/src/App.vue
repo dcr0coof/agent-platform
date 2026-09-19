@@ -4,6 +4,7 @@ import {
   api,
   blankConstraints,
   type Constraints,
+  type Message,
   type Run,
   type RunEvent,
   type Session,
@@ -40,12 +41,32 @@ const dirty = computed(
     (title.value !== current.value.title ||
       JSON.stringify(form.value) !== JSON.stringify(current.value.constraints)),
 );
-const messages = computed(() =>
-  (current.value?.messages || []).filter(
-    (m) =>
-      m.role === "user" || (m.role === "assistant" && !m.tool_calls?.length),
-  ),
-);
+const messages = computed(() => {
+  const visible: (Message & { weatherEvidence: string[] })[] = [];
+  const pending = new Set<string>();
+  let evidence: string[] = [];
+  let inTurn = false;
+  for (const message of current.value?.messages || []) {
+    if (message.role === "user") {
+      pending.clear();
+      evidence = [];
+      inTurn = true;
+      visible.push({ ...message, weatherEvidence: [] });
+    } else if (message.role === "assistant" && message.tool_calls?.length) {
+      if (inTurn) for (const call of message.tool_calls) {
+        if (call.function.name === "weather") pending.add(call.id);
+      }
+    } else if (message.role === "tool" && message.tool_call_id && pending.delete(message.tool_call_id)) {
+      evidence.push(message.content);
+    } else if (message.role === "assistant" && !message.tool_calls?.length) {
+      visible.push({ ...message, weatherEvidence: evidence });
+      evidence = [];
+      pending.clear();
+      inTurn = false;
+    }
+  }
+  return visible;
+});
 const completeCount = computed(
   () =>
     [
@@ -433,6 +454,11 @@ onBeforeUnmount(closeStream);
                   {{ message.role === "user" ? "你" : "行迹助手" }}
                 </div>
                 <p>{{ message.content }}</p>
+                <details v-if="message.weatherEvidence.length" class="weather-evidence">
+                  <summary>天气依据 · {{ message.weatherEvidence.length }} 条工具结果</summary>
+                  <p>本轮调用的原始记录，可能包含未知或错误信息；历史记录不代表当前天气。</p>
+                  <pre v-for="(evidence, i) in message.weatherEvidence" :key="i">{{ evidence }}</pre>
+                </details>
               </div>
             </article></template
           >
