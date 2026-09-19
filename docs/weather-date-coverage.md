@@ -25,6 +25,10 @@ CLI 与真实模型模式的 Web 工作台复用同一个 `weather` 工具，无
 
 ## 验证
 
+2026-09-19：工作台在成功轮次的最终回答旁增加“天气依据”折叠区域，展示该轮按 tool_call_id 配对的 weather 原始结果。孤立结果、其他工具、跨轮旧 ID 不作为天气依据；所有文本经 Vue 转义。刷新可从已保存历史还原，切换会话不保留上一会话依据。结果可能包含未知或执行错误，不是“已核实”的标签；尚未做结构化气象卡片或模型引用正确性检查。
+
+浏览器回归使用明确的历史 API 固定样本，覆盖关联、刷新、会话切换、HTML 字符串转义和 390px 窄屏。它验证展示逻辑，不等于真实天气/模型端到端联调。
+
 ```bash
 go test ./internal/tool/builtin -run TestWeather
 go test ./internal/trip -run TestTripWeatherDateIsPreservedThroughToolTurn

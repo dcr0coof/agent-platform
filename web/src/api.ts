@@ -11,7 +11,8 @@ export interface Constraints {
 export interface Message {
   role: string;
   content: string;
-  tool_calls?: unknown[];
+  tool_calls?: { id: string; function: { name: string; arguments: string } }[];
+  tool_call_id?: string;
 }
 export interface RunEvent {
   seq: number;
