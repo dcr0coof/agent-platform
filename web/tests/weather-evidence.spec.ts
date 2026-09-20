@@ -1,7 +1,15 @@
 import { test, expect } from "@playwright/test";
 
 test("weather evidence is paired per turn, escaped, restored and isolated", async ({ page }) => {
+  // Reproduce slow first-session creation: navigation is not workspace readiness.
+  await page.route("**/api/sessions", async route => {
+    if (route.request().method() === "POST") {
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+    await route.continue();
+  });
   await page.goto("/");
+  await expect(page.locator(".trip-item")).toHaveCount(1);
   const sessions = await (await page.request.get("/api/sessions")).json();
   const id = sessions[0].id;
   const session = await (await page.request.get(`/api/sessions/${id}`)).json();
