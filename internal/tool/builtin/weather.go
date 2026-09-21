@@ -35,6 +35,7 @@ func (w *Weather) Name() string { return "weather" }
 func (w *Weather) Description() string {
 	return "查询指定城市的实时天气或未来天气预报。" +
 		"参数 city 可以是城市中文名（如'北京'、'上海'）或城市 ID。" +
+		"城市搜索存在多个候选时，必须先请用户选择地点，再将选中的 Location ID 作为 city 重试，不得自行选择第一项。" +
 		"参数 type 可选 'now'（实时天气，默认）或 'forecast'（3天预报）。" +
 		"查询指定日期必须传 date（YYYY-MM-DD），此时默认 forecast；只能使用返回中覆盖该日期的数据，未覆盖则天气未知。"
 }
@@ -45,7 +46,7 @@ func (w *Weather) Parameters() map[string]interface{} {
 		"properties": map[string]interface{}{
 			"city": map[string]interface{}{
 				"type":        "string",
-				"description": "城市名称，如'北京'、'上海'、'深圳'",
+				"description": "城市名称，或用户已选择的候选 Location ID；多个候选时先澄清地点",
 			},
 			"type": map[string]interface{}{
 				"type":        "string",
@@ -122,8 +123,11 @@ func (w *Weather) cityLookup(ctx context.Context, city string) (string, error) {
 	var result struct {
 		Code     string `json:"code"`
 		Location []struct {
-			ID   string `json:"id"`
-			Name string `json:"name"`
+			ID      string `json:"id"`
+			Name    string `json:"name"`
+			Adm2    string `json:"adm2"`
+			Adm1    string `json:"adm1"`
+			Country string `json:"country"`
 		} `json:"location"`
 	}
 	if err := json.Unmarshal(data, &result); err != nil {
@@ -133,11 +137,31 @@ func (w *Weather) cityLookup(ctx context.Context, city string) (string, error) {
 	if result.Code == "403" {
 		return "", fmt.Errorf("天气 API 拒绝访问（403），请检查 API Host、凭证和订阅权限")
 	}
-	if result.Code != "200" || len(result.Location) == 0 || result.Location[0].ID == "" {
+	if result.Code != "200" || len(result.Location) == 0 {
 		return "", fmt.Errorf("未找到城市 '%s'（code=%s）", city, result.Code)
 	}
 
-	return result.Location[0].ID, nil
+	seen := make(map[string]bool)
+	var candidates []string
+	for _, location := range result.Location {
+		id := strings.TrimSpace(location.ID)
+		if id == "" {
+			return "", fmt.Errorf("城市搜索响应缺少地点 ID，无法确认目的地")
+		}
+		if seen[id] {
+			continue
+		}
+		seen[id] = true
+		candidates = append(candidates, fmt.Sprintf("%s（%s / %s / %s，Location ID：%s）", location.Name, location.Adm2, location.Adm1, location.Country, id))
+	}
+	// An explicit returned ID selects a candidate; names and provider ranking do not.
+	if seen[city] {
+		return city, nil
+	}
+	if len(seen) == 1 {
+		return strings.TrimSpace(result.Location[0].ID), nil
+	}
+	return "", fmt.Errorf("地点不明确，尚未查询天气。请用户选择以下候选，再将选中的 Location ID 作为 city 重试：\n%s", strings.Join(candidates, "\n"))
 }
 
 // now 实时天气
