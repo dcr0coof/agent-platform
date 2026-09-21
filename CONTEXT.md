@@ -12,6 +12,8 @@ The current-observation path also returns provider/location, retrieval time, API
 
 ## Vocabulary
 
+Weather city lookup now refuses to select the first of multiple distinct location IDs. It returns candidate names, administrative regions and IDs for clarification; an explicit returned ID can resolve the next call. This is a conservative tool-level ambiguity guard, not persisted user approval or a guarantee of model compliance.
+
 The Web workspace now lets users expand paired raw weather tool results beside each successful turn's final answer. Association uses weather tool-call IDs within that user turn, with escaped text restored from saved history. This is source inspection, not a structured weather card or proof that an answer follows the evidence.
 
 - **Workspace**: isolation boundary for documents, preferences, conversations and runs.
