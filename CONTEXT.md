@@ -6,11 +6,13 @@ A weather-aware travel and daily planning assistant, implemented as a Go Agent r
 
 Current implementation: CLI, calculator, datetime, QWeather tool, complete-turn buffer memory, and a local Vue/TypeScript trip workspace backed by Go HTTP and SQLite. The workspace persists editable constraints and complete successful turns, isolates browser owners, and supports durable SSE run events, idempotent starts and cancellation. An explicitly labelled deterministic demo requires no external services. RAG, token budgeting/summaries, maps and itinerary generation remain planned. See `docs/trip-workspace.md` and `docs/adr/0001-local-trip-workspace.md` for the current single-process, local-only boundary.
 
-The weather tool accepts an optional destination forecast date, checks membership in the actual returned dates, and reports unknown when absent. Forecast text includes provider/location and retrieval/update timestamps; this is not yet a weather evidence card, a freshness guarantee, or an activity recommendation. See `docs/weather-date-coverage.md` for the bounded Issue #4 slice and the existing provider API migration dependency.
+The weather tool accepts an optional destination forecast date, checks membership in the actual returned dates, and reports unknown when absent. Forecast text includes provider/location and retrieval/update timestamps; this is not yet a structured weather card or freshness guarantee. The generic precipitation-based activity hints below do not provide personalised itineraries. See `docs/weather-date-coverage.md` for the bounded Issue #4 slice and the existing provider API migration dependency.
 
 The current-observation path also returns provider/location, retrieval time, API update time, observation time and observation age. Missing, invalid or future observation timestamps do not become fresh evidence; no universal weather expiry threshold is imposed. This is the bounded Issue #14 slice, with fixed HTTP tests rather than a live provider verification.
 
 ## Vocabulary
+
+Forecast output now includes per-date precipitation and application-labelled indoor activity categories when the amount is valid and the provider update is within a six-hour planning window. Missing/invalid/future/older evidence produces no activity recommendation; zero precipitation does not imply outdoor suitability. These are generic rules, not personalised venue choices or itinerary edits, and remain separate from provider observations.
 
 Weather city lookup now refuses to select the first of multiple distinct location IDs. It returns candidate names, administrative regions and IDs for clarification; an explicit returned ID can resolve the next call. This is a conservative tool-level ambiguity guard, not persisted user approval or a guarantee of model compliance.
 
