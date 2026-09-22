@@ -242,7 +242,7 @@ func (w *Weather) forecast(ctx context.Context, locationID, date string) (string
 	if err != nil {
 		return "", err
 	}
-	fetchedAt := time.Now().UTC().Format(time.RFC3339)
+	fetchedAt := time.Now().UTC()
 
 	var result struct {
 		Code       string `json:"code"`
@@ -252,6 +252,7 @@ func (w *Weather) forecast(ctx context.Context, locationID, date string) (string
 			TempMax      string `json:"tempMax"`
 			TempMin      string `json:"tempMin"`
 			TextDay      string `json:"textDay"`
+			Precip       string `json:"precip"`
 			WindDirDay   string `json:"windDirDay"`
 			WindScaleDay string `json:"windScaleDay"`
 		} `json:"daily"`
@@ -282,7 +283,7 @@ func (w *Weather) forecast(ctx context.Context, locationID, date string) (string
 		result.UpdateTime = "未提供，无法确认数据新鲜度"
 	}
 	var output strings.Builder
-	fmt.Fprintf(&output, "【3天天气预报】\n来源：QWeather\nLocation ID：%s\n获取时间：%s\n预报更新时间：%s\n可用预报日期：%s\n", locationID, fetchedAt, result.UpdateTime, strings.Join(dates, "、"))
+	fmt.Fprintf(&output, "【3天天气预报】\n来源：QWeather\nLocation ID：%s\n获取时间：%s\n预报更新时间：%s\n可用预报日期：%s\n", locationID, fetchedAt.Format(time.RFC3339), result.UpdateTime, strings.Join(dates, "、"))
 	if date != "" {
 		fmt.Fprintf(&output, "请求日期：%s\n", date)
 	}
@@ -294,6 +295,7 @@ func (w *Weather) forecast(ctx context.Context, locationID, date string) (string
 		matched = true
 		fmt.Fprintf(&output, "  %s：%s，%s~%s°C，%s风%s级\n",
 			d.FxDate, d.TextDay, d.TempMin, d.TempMax, d.WindDirDay, d.WindScaleDay)
+		fmt.Fprintf(&output, "    %s\n", precipitationAlternative(d.Precip, result.UpdateTime, fetchedAt))
 	}
 	if !matched {
 		output.WriteString("天气未知：请求日期未被本次预报覆盖，不能用其他日期的天气推断。\n")
