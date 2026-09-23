@@ -27,7 +27,7 @@ func TestPrecipitationAlternative(t *testing.T) {
 		{"infinity", "+Inf", "2026-09-22T02:30:00Z", "降水依据缺失或无效"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			got := precipitationAlternative(tc.precip, tc.updated, now)
+			got := precipitationAlternative(tc.precip, tc.updated, now, "2026-09-22", "2026-09-22")
 			if !strings.Contains(got, tc.want) {
 				t.Fatalf("got %q, want %q", got, tc.want)
 			}
@@ -39,18 +39,20 @@ func TestPrecipitationAlternative(t *testing.T) {
 }
 
 func TestForecastAlternativesStayWithRequestedDate(t *testing.T) {
+	date := time.Now().UTC().AddDate(0, 0, 1)
+	wetDate, dryDate, missingDate := date.Format("2006-01-02"), date.AddDate(0, 0, 1).Format("2006-01-02"), date.AddDate(0, 0, 2).Format("2006-01-02")
 	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/geo/v2/city/lookup" {
-			fmt.Fprint(w, `{"code":"200","location":[{"id":"123"}]}`)
+			fmt.Fprint(w, `{"code":"200","location":[{"id":"123","tz":"UTC"}]}`)
 			return
 		}
-		fmt.Fprintf(w, `{"code":"200","updateTime":%q,"daily":[{"fxDate":"2026-09-22","textDay":"雨","tempMin":"20","tempMax":"25","precip":"4.1"},{"fxDate":"2026-09-23","textDay":"晴","tempMin":"20","tempMax":"25","precip":"0"}]}`, time.Now().UTC().Add(-time.Minute).Format(time.RFC3339))
+		fmt.Fprintf(w, `{"code":"200","updateTime":%q,"daily":[{"fxDate":%q,"textDay":"雨","tempMin":"20","tempMax":"25","precip":"4.1"},{"fxDate":%q,"textDay":"晴","tempMin":"20","tempMax":"25","precip":"0"}]}`, time.Now().UTC().Add(-time.Minute).Format(time.RFC3339), wetDate, dryDate)
 	}))
 	defer s.Close()
 	for _, tc := range []struct{ date, want, absent string }{
-		{"2026-09-22", "预报降水量：4.1 mm", "未预报降水"},
-		{"2026-09-23", "不据此认定适合户外", "室内展览"},
-		{"2026-09-24", "天气未知", "活动备选"},
+		{wetDate, "预报降水量：4.1 mm", "未预报降水"},
+		{dryDate, "不据此认定适合户外", "室内展览"},
+		{missingDate, "天气未知", "活动备选"},
 	} {
 		got, err := NewWeather("test", s.URL).Execute(context.Background(), map[string]interface{}{"city": "测试", "date": tc.date})
 		if err != nil || !strings.Contains(got, tc.want) || strings.Contains(got, tc.absent) {

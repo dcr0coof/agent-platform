@@ -20,6 +20,10 @@ type Weather struct {
 	client  *http.Client
 }
 
+type weatherLocation struct {
+	ID, Timezone string
+}
+
 // NewWeather 创建天气工具
 // apiKey: 和风天气 API Key
 func NewWeather(apiKey, baseURL string) *Weather {
@@ -97,7 +101,7 @@ func (w *Weather) Execute(ctx context.Context, params map[string]interface{}) (s
 	}
 
 	// 1. 城市搜索 → location ID
-	locationID, err := w.cityLookup(ctx, city)
+	location, err := w.cityLookup(ctx, city)
 	if err != nil {
 		return "", fmt.Errorf("城市查询失败: %w", err)
 	}
@@ -105,19 +109,19 @@ func (w *Weather) Execute(ctx context.Context, params map[string]interface{}) (s
 	// 2. 查询天气
 	switch queryType {
 	case "forecast":
-		return w.forecast(ctx, locationID, date)
+		return w.forecast(ctx, location, date)
 	default:
-		return w.now(ctx, locationID)
+		return w.now(ctx, location.ID)
 	}
 }
 
-// cityLookup 城市搜索，返回 LocationID
-func (w *Weather) cityLookup(ctx context.Context, city string) (string, error) {
+// cityLookup keeps the selected location's timezone with its ID.
+func (w *Weather) cityLookup(ctx context.Context, city string) (weatherLocation, error) {
 	u := w.endpoint("/geo/v2/city/lookup", city)
 
 	data, err := w.doGet(ctx, u)
 	if err != nil {
-		return "", err
+		return weatherLocation{}, err
 	}
 
 	var result struct {
@@ -128,40 +132,41 @@ func (w *Weather) cityLookup(ctx context.Context, city string) (string, error) {
 			Adm2    string `json:"adm2"`
 			Adm1    string `json:"adm1"`
 			Country string `json:"country"`
+			TZ      string `json:"tz"`
 		} `json:"location"`
 	}
 	if err := json.Unmarshal(data, &result); err != nil {
-		return "", fmt.Errorf("解析城市数据失败: %w", err)
+		return weatherLocation{}, fmt.Errorf("解析城市数据失败: %w", err)
 	}
 
 	if result.Code == "403" {
-		return "", fmt.Errorf("天气 API 拒绝访问（403），请检查 API Host、凭证和订阅权限")
+		return weatherLocation{}, fmt.Errorf("天气 API 拒绝访问（403），请检查 API Host、凭证和订阅权限")
 	}
 	if result.Code != "200" || len(result.Location) == 0 {
-		return "", fmt.Errorf("未找到城市 '%s'（code=%s）", city, result.Code)
+		return weatherLocation{}, fmt.Errorf("未找到城市 '%s'（code=%s）", city, result.Code)
 	}
 
-	seen := make(map[string]bool)
+	seen := make(map[string]weatherLocation)
 	var candidates []string
 	for _, location := range result.Location {
 		id := strings.TrimSpace(location.ID)
 		if id == "" {
-			return "", fmt.Errorf("城市搜索响应缺少地点 ID，无法确认目的地")
+			return weatherLocation{}, fmt.Errorf("城市搜索响应缺少地点 ID，无法确认目的地")
 		}
-		if seen[id] {
+		if _, exists := seen[id]; exists {
 			continue
 		}
-		seen[id] = true
+		seen[id] = weatherLocation{ID: id, Timezone: strings.TrimSpace(location.TZ)}
 		candidates = append(candidates, fmt.Sprintf("%s（%s / %s / %s，Location ID：%s）", location.Name, location.Adm2, location.Adm1, location.Country, id))
 	}
 	// An explicit returned ID selects a candidate; names and provider ranking do not.
-	if seen[city] {
-		return city, nil
+	if selected, exists := seen[city]; exists {
+		return selected, nil
 	}
 	if len(seen) == 1 {
-		return strings.TrimSpace(result.Location[0].ID), nil
+		return seen[strings.TrimSpace(result.Location[0].ID)], nil
 	}
-	return "", fmt.Errorf("地点不明确，尚未查询天气。请用户选择以下候选，再将选中的 Location ID 作为 city 重试：\n%s", strings.Join(candidates, "\n"))
+	return weatherLocation{}, fmt.Errorf("地点不明确，尚未查询天气。请用户选择以下候选，再将选中的 Location ID 作为 city 重试：\n%s", strings.Join(candidates, "\n"))
 }
 
 // now 实时天气
@@ -235,8 +240,8 @@ func providerTimeLabel(value string, fetchedAt time.Time) (string, time.Time) {
 }
 
 // forecast 3天预报
-func (w *Weather) forecast(ctx context.Context, locationID, date string) (string, error) {
-	u := w.endpoint("/v7/weather/3d", locationID)
+func (w *Weather) forecast(ctx context.Context, location weatherLocation, date string) (string, error) {
+	u := w.endpoint("/v7/weather/3d", location.ID)
 
 	data, err := w.doGet(ctx, u)
 	if err != nil {
@@ -283,7 +288,13 @@ func (w *Weather) forecast(ctx context.Context, locationID, date string) (string
 		result.UpdateTime = "未提供，无法确认数据新鲜度"
 	}
 	var output strings.Builder
-	fmt.Fprintf(&output, "【3天天气预报】\n来源：QWeather\nLocation ID：%s\n获取时间：%s\n预报更新时间：%s\n可用预报日期：%s\n", locationID, fetchedAt.Format(time.RFC3339), result.UpdateTime, strings.Join(dates, "、"))
+	fmt.Fprintf(&output, "【3天天气预报】\n来源：QWeather\nLocation ID：%s\n获取时间：%s\n预报更新时间：%s\n可用预报日期：%s\n", location.ID, fetchedAt.Format(time.RFC3339), result.UpdateTime, strings.Join(dates, "、"))
+	localDate := destinationDate(location.Timezone, fetchedAt)
+	if localDate == "" {
+		output.WriteString("目的地时区或当地日期：未知，无法判定活动日期有效性\n")
+	} else {
+		fmt.Fprintf(&output, "目的地时区：%s\n获取时目的地日期：%s\n", location.Timezone, localDate)
+	}
 	if date != "" {
 		fmt.Fprintf(&output, "请求日期：%s\n", date)
 	}
@@ -295,7 +306,7 @@ func (w *Weather) forecast(ctx context.Context, locationID, date string) (string
 		matched = true
 		fmt.Fprintf(&output, "  %s：%s，%s~%s°C，%s风%s级\n",
 			d.FxDate, d.TextDay, d.TempMin, d.TempMax, d.WindDirDay, d.WindScaleDay)
-		fmt.Fprintf(&output, "    %s\n", precipitationAlternative(d.Precip, result.UpdateTime, fetchedAt))
+		fmt.Fprintf(&output, "    %s\n", precipitationAlternative(d.Precip, result.UpdateTime, fetchedAt, d.FxDate, localDate))
 	}
 	if !matched {
 		output.WriteString("天气未知：请求日期未被本次预报覆盖，不能用其他日期的天气推断。\n")

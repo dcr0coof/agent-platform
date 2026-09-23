@@ -14,6 +14,8 @@ The current-observation path also returns provider/location, retrieval time, API
 
 Forecast output now includes per-date precipitation and application-labelled indoor activity categories when the amount is valid and the provider update is within a six-hour planning window. Missing/invalid/future/older evidence produces no activity recommendation; zero precipitation does not imply outdoor suitability. These are generic rules, not personalised venue choices or itinerary edits, and remain separate from provider observations.
 
+Activity planning also checks the forecast date against the destination's local date at retrieval, using the selected city's IANA timezone. Past dates keep their raw forecast record but produce no new activity hint; missing or invalid timezone data also prevents hints. The machine timezone and the provider update's numeric offset do not identify the destination. Embedded standard-library tzdata supports standalone binaries; this is not a historical-weather API.
+
 Weather city lookup now refuses to select the first of multiple distinct location IDs. It returns candidate names, administrative regions and IDs for clarification; an explicit returned ID can resolve the next call. This is a conservative tool-level ambiguity guard, not persisted user approval or a guarantee of model compliance.
 
 The Web workspace now lets users expand paired raw weather tool results beside each successful turn's final answer. Association uses weather tool-call IDs within that user turn, with escaped text restored from saved history. This is source inspection, not a structured weather card or proof that an answer follows the evidence.
