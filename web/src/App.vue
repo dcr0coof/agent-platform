@@ -15,6 +15,8 @@ const current = ref<Session | null>(null);
 const form = ref<Constraints>(blankConstraints());
 const title = ref("新的出行");
 const input = ref("");
+// Keep drafts in this page only; never copy one trip's message into another.
+const drafts = new Map<string, string>();
 const demo = ref(false);
 const ready = ref(false);
 const error = ref("");
@@ -105,6 +107,13 @@ async function refreshList() {
   sessions.value = await api<Session[]>("/sessions");
 }
 function setSession(s: Session) {
+  if (current.value?.id !== s.id) {
+    if (current.value) {
+      if (input.value) drafts.set(current.value.id, input.value);
+      else drafts.delete(current.value.id);
+    }
+    input.value = drafts.get(s.id) || "";
+  }
   current.value = s;
   title.value = s.title;
   form.value = { ...s.constraints };
@@ -134,7 +143,6 @@ async function loadSession(id: string, checkDirty = true) {
     setSession(s);
     run.value = s.active_run || null;
     events.value = s.active_run?.events || [];
-    input.value = "";
     retry = null;
     if (s.active_run) observe(s.active_run);
     await scrollDown();
@@ -163,7 +171,6 @@ async function createSession() {
     setSession(s);
     run.value = null;
     events.value = [];
-    input.value = "";
     retry = null;
     sideOpen.value = false;
     await refreshList();
@@ -277,6 +284,7 @@ async function send() {
       }),
     });
     input.value = "";
+    drafts.delete(sid);
     retry = null;
     observe(r);
     rightTab.value = "activity";
@@ -526,6 +534,7 @@ onBeforeUnmount(closeStream);
           <p class="composer-caption">
             Enter 发送 · Shift + Enter 换行<span>重要条件请在右侧确认保存</span>
           </p>
+          <p v-if="input" class="composer-caption" role="status">未发送消息按出行暂存于本页，刷新或关闭页面后清除。</p>
         </div>
       </template>
     </main>
