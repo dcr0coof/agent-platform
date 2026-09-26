@@ -336,6 +336,22 @@ select:focus {
   white-space: nowrap;
   padding-bottom: 3px;
 }
+.trip-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.export-record {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 10px;
+  color: var(--green);
+  background: transparent;
+  font-size: 11px;
+  cursor: pointer;
+}
 .trip-facts {
   display: flex;
   flex-wrap: wrap;

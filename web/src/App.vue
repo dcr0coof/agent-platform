@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from "vue";
+import { tripRecord } from "./export-record";
 import {
   api,
   blankConstraints,
@@ -312,6 +313,18 @@ async function cancel() {
 function usePrompt(value: string) {
   input.value = value;
 }
+function exportRecord() {
+  if (!current.value || busy.value || running.value) return;
+  const record = tripRecord(current.value, messages.value);
+  const url = URL.createObjectURL(new Blob([record.text], { type: "text/plain;charset=utf-8" }));
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = record.filename;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
 onMounted(async () => {
   try {
     const config = await api<{ demo: boolean }>("/bootstrap");
@@ -412,9 +425,12 @@ onBeforeUnmount(closeStream);
             <h1>{{ current.title }}</h1>
             <p>从你的约束开始，让每一步都更从容。</p>
           </div>
+          <div class="trip-actions">
+          <button class="export-record" :disabled="busy || running" @click="exportRecord" title="下载已保存约束、已完成对话与天气依据；不含草稿">导出出行记录</button>
           <span class="saved-note"
             >◉ {{ dirty ? "有未保存修改" : "已保存到本机" }}</span
           >
+          </div>
         </section>
         <div class="trip-facts">
           <span>↗ {{ form.destination || "目的地待定" }}</span
