@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { readFile } from "node:fs/promises";
 
 test("weather evidence is paired per turn, escaped, restored and isolated", async ({ page }) => {
   // Reproduce slow first-session creation: navigation is not workspace readiness.
@@ -32,6 +33,13 @@ test("weather evidence is paired per turn, escaped, restored and isolated", asyn
   await expect(cards).toHaveCount(1);
   await cards.locator("summary").click();
   await expect(cards.locator("pre")).toHaveText(evidence);
+  const pendingDownload = page.waitForEvent("download");
+  await page.getByRole("button", { name: "导出出行记录" }).click();
+  const exported = await pendingDownload;
+  const text = await readFile((await exported.path())!, "utf8");
+  expect(text).toContain(evidence);
+  for (const excluded of ["孤立结果不可显示", "非天气结果不可显示", "跨轮旧ID不可显示"])
+    expect(text).not.toContain(excluded);
   await expect(cards.locator("script")).toHaveCount(0);
   expect(await page.evaluate(() => (window as unknown as { injected?: boolean }).injected)).toBeUndefined();
   await expect(page.locator(".message.assistant").last().locator("details")).toHaveCount(0);
