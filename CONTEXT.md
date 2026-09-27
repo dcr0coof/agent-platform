@@ -12,6 +12,8 @@ The current-observation path also returns provider/location, retrieval time, API
 
 ## Vocabulary
 
+Real-model runs record initial history-window evidence in context.ready: loaded versus saved message/complete-turn counts and omitted messages. The event describes the first model request's retained history, excluding the current input and system constraints; later tool-loop growth is not a token budget. Full persisted history remains separate, and the newest complete tool turn may exceed the soft message limit. Demo mode does not pretend to call a model.
+
 Forecast output now includes per-date precipitation and application-labelled indoor activity categories when the amount is valid and the provider update is within a six-hour planning window. Missing/invalid/future/older evidence produces no activity recommendation; zero precipitation does not imply outdoor suitability. These are generic rules, not personalised venue choices or itinerary edits, and remain separate from provider observations.
 
 Activity planning also checks the forecast date against the destination's local date at retrieval, using the selected city's IANA timezone. Past dates keep their raw forecast record but produce no new activity hint; missing or invalid timezone data also prevents hints. The machine timezone and the provider update's numeric offset do not identify the destination. Embedded standard-library tzdata supports standalone binaries; this is not a historical-weather API.
