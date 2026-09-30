@@ -59,3 +59,30 @@ jobs:
           name: browser-failure-traces
           path: web/test-results/
           retention-days: 7
+  windows-demo-package:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm --prefix web ci
+      - run: npx playwright install chromium
+        working-directory: web
+      - name: Build and exercise extracted package
+        shell: pwsh
+        run: |
+          $package = ./scripts/package-demo.ps1 -Version v0.1.0-demo.1
+          $expected = (Get-Content -LiteralPath $package.Checksums).Split(' ')[0]
+          if ((Get-FileHash -LiteralPath $package.Archive -Algorithm SHA256).Hash.ToLowerInvariant() -ne $expected) { throw 'Checksum mismatch' }
+          $extract = Join-Path (Split-Path $package.Archive) 'extracted package'
+          Expand-Archive -LiteralPath $package.Archive -DestinationPath $extract
+          $env:TRIP_PACKAGE_DIR = Join-Path $extract $package.Name
+          npm --prefix web run test:e2e
+          if ($LASTEXITCODE -ne 0) { throw 'Package browser checks failed' }

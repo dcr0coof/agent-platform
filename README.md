@@ -20,6 +20,8 @@ go run ./cmd/server -demo
 
 ## 快速开始
 
+Windows 演示候选包：先安装构建依赖（`npm --prefix web ci`），然后运行 `pwsh -File scripts/package-demo.ps1 -Version v0.1.0-demo.1`。输出路径由命令返回，每次构建使用新目录，不覆盖旧包。包内无需 Go/Node 即可运行，包含独立说明、无密钥配置示例和 ZIP 校验和。此命令不发版；待前置 PR 评审合并、CI 与发布验收通过后才发布预发布版。使用及限制见 [演示包说明](scripts/demo-README.md)。
+
 需要 Go 1.22.12 或更高版本，以及可用的模型 API Key。从项目根目录启动。
 
 PowerShell：
