@@ -31,6 +31,8 @@ const rightTab = ref<"constraints" | "activity">("constraints");
 const feed = ref<HTMLElement | null>(null);
 let stream: EventSource | null = null;
 let selection = 0;
+let finishVersion = 0;
+const refreshingRun = ref<string | null>(null);
 let retry: {
   id: string;
   message: string;
@@ -38,6 +40,8 @@ let retry: {
   revision: number;
 } | null = null;
 const running = computed(() => run.value?.status === "running");
+const settling = computed(() => !!run.value && refreshingRun.value === run.value.id);
+const locked = computed(() => running.value || settling.value);
 const dirty = computed(
   () =>
     !!current.value &&
@@ -182,7 +186,7 @@ async function createSession() {
   }
 }
 async function save(): Promise<boolean> {
-  if (!current.value || running.value) return false;
+  if (!current.value || locked.value) return false;
   const sid = current.value.id;
   try {
     const s = await api<Session>("/sessions/" + sid, {
@@ -214,13 +218,17 @@ async function saveForm() {
   }
 }
 async function finish(id: string, sid: string) {
+  if (current.value?.id !== sid || run.value?.id !== id) return;
+  const ticket = ++finishVersion;
+  const selected = selection;
+  refreshingRun.value = id;
   closeStream();
   try {
     const [s, r] = await Promise.all([
       api<Session>("/sessions/" + sid),
       api<Run>("/runs/" + id),
     ]);
-    if (current.value?.id !== sid || run.value?.id !== id) return;
+    if (ticket !== finishVersion || selected !== selection || current.value?.id !== sid || run.value?.id !== id) return;
     setSession(s);
     run.value = r;
     events.value = r.events;
@@ -228,7 +236,9 @@ async function finish(id: string, sid: string) {
     await refreshList();
     await scrollDown();
   } catch (e) {
-    if (current.value?.id === sid) error.value = readableError(e);
+    if (ticket === finishVersion && selected === selection && current.value?.id === sid) error.value = readableError(e);
+  } finally {
+    if (ticket === finishVersion) refreshingRun.value = null;
   }
 }
 function observe(r: Run) {
@@ -260,7 +270,7 @@ function observe(r: Run) {
   };
 }
 async function send() {
-  if (!current.value || busy.value || running.value || !input.value.trim())
+  if (!current.value || busy.value || locked.value || !input.value.trim())
     return;
   busy.value = true;
   error.value = "";
@@ -314,7 +324,7 @@ function usePrompt(value: string) {
   input.value = value;
 }
 function exportRecord() {
-  if (!current.value || busy.value || running.value) return;
+  if (!current.value || busy.value || locked.value) return;
   const record = tripRecord(current.value, messages.value);
   const url = URL.createObjectURL(new Blob([record.text], { type: "text/plain;charset=utf-8" }));
   const link = document.createElement("a");
@@ -426,7 +436,7 @@ onBeforeUnmount(closeStream);
             <p>从你的约束开始，让每一步都更从容。</p>
           </div>
           <div class="trip-actions">
-          <button class="export-record" :disabled="busy || running" @click="exportRecord" title="下载已保存约束、已完成对话与天气依据；不含草稿">导出出行记录</button>
+          <button class="export-record" :disabled="busy || locked" @click="exportRecord" title="下载已保存约束、已完成对话与天气依据；不含草稿">导出出行记录</button>
           <span class="saved-note"
             >◉ {{ dirty ? "有未保存修改" : "已保存到本机" }}</span
           >
@@ -519,7 +529,7 @@ onBeforeUnmount(closeStream);
               aria-label="出行消息"
               placeholder="说说你的出行想法，或继续补充一个条件…"
               maxlength="5000"
-              :disabled="running || busy"
+              :disabled="locked || busy"
               @keydown.enter.exact.prevent="!$event.isComposing && send()"
             ></textarea>
             <div class="composer-bottom">
@@ -540,7 +550,7 @@ onBeforeUnmount(closeStream);
                 v-else
                 type="submit"
                 class="send-button"
-                :disabled="!input.trim() || busy"
+                :disabled="!input.trim() || busy || settling"
                 aria-label="发送消息"
               >
                 发送 <span>↑</span>
@@ -551,6 +561,7 @@ onBeforeUnmount(closeStream);
             Enter 发送 · Shift + Enter 换行<span>重要条件请在右侧确认保存</span>
           </p>
           <p v-if="input" class="composer-caption" role="status">未发送消息按出行暂存于本页，刷新或关闭页面后清除。</p>
+          <p v-if="settling" class="composer-caption" role="status">正在同步本轮结果，请稍候再编辑或发送。</p>
         </div>
       </template>
     </main>
@@ -589,7 +600,7 @@ onBeforeUnmount(closeStream);
           </div>
         </div>
         <form @submit.prevent="saveForm">
-          <fieldset :disabled="running || busy">
+          <fieldset :disabled="locked || busy">
             <label
               >出行名称<input
                 v-model="title"
