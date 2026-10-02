@@ -11,6 +11,10 @@ import (
 	"time"
 )
 
+// MaxRequestBytes bounds the serialized JSON body, not model tokens or total RAM.
+// Keep complete messages/tool pairs: reject oversized requests instead of truncating.
+const MaxRequestBytes = 1 << 20
+
 // openaiChatRequest OpenAI /v1/chat/completions 请求体
 type openaiChatRequest struct {
 	Model       string    `json:"model"`
@@ -72,6 +76,9 @@ func (c *OpenAIClient) Chat(ctx context.Context, messages []Message, tools []Too
 	bodyBytes, err := json.Marshal(reqBody)
 	if err != nil {
 		return nil, fmt.Errorf("marshal request: %w", err)
+	}
+	if len(bodyBytes) > MaxRequestBytes {
+		return nil, fmt.Errorf("模型请求体为 %d 字节，超过 %d 字节上限（非 token 上限）；本次未发送。请缩减输入或工具返回内容，历史过大时开启新会话", len(bodyBytes), MaxRequestBytes)
 	}
 
 	url := c.baseURL + "/chat/completions"
