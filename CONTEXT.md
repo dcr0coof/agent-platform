@@ -12,6 +12,8 @@ The current-observation path also returns provider/location, retrieval time, API
 
 ## Vocabulary
 
+The OpenAI-compatible client rejects serialized request bodies over 1 MiB before transport, including tool schemas, system constraints and tool-loop growth. This fixed UTF-8/JSON byte boundary preserves complete message/tool pairs by failing the turn instead of truncating it. It is not a token budget, provider context guarantee or a cap on serialization memory; automatic summarisation and pruning remain planned.
+
 Real-model runs record initial history-window evidence in context.ready: loaded versus saved message/complete-turn counts and omitted messages. The event describes the first model request's retained history, excluding the current input and system constraints; later tool-loop growth is not a token budget. Full persisted history remains separate, and the newest complete tool turn may exceed the soft message limit. Demo mode does not pretend to call a model.
 
 Forecast output now includes per-date precipitation and application-labelled indoor activity categories when the amount is valid and the provider update is within a six-hour planning window. Missing/invalid/future/older evidence produces no activity recommendation; zero precipitation does not imply outdoor suitability. These are generic rules, not personalised venue choices or itinerary edits, and remain separate from provider observations.
