@@ -179,6 +179,11 @@ func (s *Service) execute(ctx context.Context, cancel context.CancelFunc, ss Ses
 		}
 	} else if err != nil {
 		status, detail = "failed", "执行失败，请检查模型配置或稍后重试；旧对话未改变"
+		var sizeErr *llm.RequestSizeError
+		if errors.As(err, &sizeErr) {
+			// Use only the local typed error, never an upstream/wrapper error string.
+			detail = sizeErr.Error() + "；旧对话未改变。此前模型请求或工具调用可能已执行。"
+		}
 	}
 	if err := s.Store.Finish(run.ID, status, detail, added); err != nil {
 		log.Printf("run %s: persist terminal state failed: %v", run.ID, err)
