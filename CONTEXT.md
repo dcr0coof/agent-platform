@@ -41,3 +41,5 @@ The Web workspace now lets users expand paired raw weather tool results beside e
 ## Source of direction
 
 The owner requested broader functionality connected to weather and travel, delegated routine product/technical choices, and required every meaningful milestone to be published with clear GitHub Issues and PRs. See `docs/travel-agent-roadmap.md` for the delivery sequence.
+
+The Web workspace can create a fresh conversation from the current saved constraints using the existing session-creation API. The original session/history and page-local draft remain intact; no messages, run state or draft are copied. Unsaved constraints, active execution and terminal refresh block this action. It resets the conversation context by creating a new session, not by summarising or deleting history.

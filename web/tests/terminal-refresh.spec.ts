@@ -28,6 +28,7 @@ for (const outcome of ["success", "failure", "switch"] as const) {
       await expect(page.locator(".save-button")).toBeDisabled();
       await expect(page.getByRole("button", { name: "发送消息" })).toBeDisabled();
       await expect(page.getByRole("button", { name: "导出出行记录" })).toBeDisabled();
+      await expect(page.getByRole("button", { name: "沿用约束开新对话" })).toBeDisabled();
       if (outcome === "switch") {
         await page.getByRole("button", { name: "开启一段出行" }).click();
         await expect(page.locator(".trip-item")).toHaveCount(2);
