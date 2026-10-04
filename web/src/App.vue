@@ -157,8 +157,9 @@ async function loadSession(id: string, checkDirty = true) {
     if (ticket === selection) busy.value = false;
   }
 }
-async function createSession() {
+async function createSession(copyConstraints = false) {
   if (busy.value) return;
+  if (copyConstraints && (!current.value || dirty.value || locked.value)) return;
   if (dirty.value && !window.confirm("出行约束尚未保存，确定新建会话吗？"))
     return;
   busy.value = true;
@@ -167,8 +168,8 @@ async function createSession() {
     const s = await api<Session>("/sessions", {
       method: "POST",
       body: JSON.stringify({
-        title: "新的出行",
-        constraints: blankConstraints(),
+        title: copyConstraints ? Array.from(current.value!.title).slice(0, 73).join("") + " · 新对话" : "新的出行",
+        constraints: copyConstraints ? current.value!.constraints : blankConstraints(),
       }),
     });
     ++selection;
@@ -178,6 +179,8 @@ async function createSession() {
     events.value = [];
     retry = null;
     sideOpen.value = false;
+    notice.value = copyConstraints ? "已沿用保存的约束开启新对话；原会话和草稿保留，旧聊天未带入。" : "";
+    rightTab.value = "constraints";
     await refreshList();
   } catch (e) {
     error.value = readableError(e);
@@ -365,7 +368,7 @@ onBeforeUnmount(closeStream);
         ><span class="brand-icon">↗</span
         ><span>行迹<small>ROUTEWISE</small></span></a
       >
-      <button class="new-trip" :disabled="busy" @click="createSession">
+      <button class="new-trip" :disabled="busy" @click="createSession()">
         <span>＋</span> 开启一段出行
       </button>
       <div class="nav-caption">
@@ -437,6 +440,7 @@ onBeforeUnmount(closeStream);
           </div>
           <div class="trip-actions">
           <button class="export-record" :disabled="busy || locked" @click="exportRecord" title="下载已保存约束、已完成对话与天气依据；不含草稿">导出出行记录</button>
+          <button class="export-record" :disabled="busy || locked || dirty" @click="createSession(true)" title="请先保存约束并等待运行完成；仅复制已保存约束，原对话和草稿保留">沿用约束开新对话</button>
           <span class="saved-note"
             >◉ {{ dirty ? "有未保存修改" : "已保存到本机" }}</span
           >
