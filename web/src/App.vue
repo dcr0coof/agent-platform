@@ -365,7 +365,7 @@ onBeforeUnmount(closeStream);
   <div class="workspace">
     <aside class="sidebar" :class="{ open: sideOpen }">
       <a class="brand" href="/" aria-label="行迹首页"
-        ><span class="brand-icon">↗</span
+        ><span class="brand-icon"><img src="/art/compass.svg" alt="" width="28" height="28" /></span
         ><span>行迹<small>ROUTEWISE</small></span></a
       >
       <button class="new-trip" :disabled="busy" @click="createSession()">
@@ -414,7 +414,7 @@ onBeforeUnmount(closeStream);
           >
             ☰</button
           ><span>工作台</span><span class="slash">/</span
-          ><strong>出行规划</strong>
+          ><strong>出行规划</strong><span class="journal-label">THE TRAVEL JOURNAL</span>
         </div>
         <span class="mode-badge"
           ><span></span>{{ demo ? "本地演示" : "模型已连接" }}</span
@@ -434,7 +434,7 @@ onBeforeUnmount(closeStream);
       <template v-if="current">
         <section class="trip-header">
           <div>
-            <span class="eyebrow">A LITTLE PLANNING, A GREAT JOURNEY</span>
+            <span class="eyebrow">FIELD NOTES / 出行手记</span>
             <h1>{{ current.title }}</h1>
             <p>从你的约束开始，让每一步都更从容。</p>
           </div>
@@ -459,16 +459,13 @@ onBeforeUnmount(closeStream);
         </div>
         <div class="conversation" ref="feed">
           <section v-if="!messages.length && !run" class="welcome">
-            <div class="welcome-art" aria-hidden="true">
-              <span class="orbit orbit-one"></span
-              ><span class="orbit orbit-two"></span
-              ><span class="waypoint first"></span
-              ><span class="waypoint last"></span
-              ><span class="art-arrow">↗</span
-              ><span class="art-note">下一站 · 由你决定</span>
-            </div>
+            <figure class="welcome-art">
+              <img class="atlas-art" src="/art/travel-atlas.svg" alt="" width="640" height="240" />
+              <figcaption><span>沿着好奇心，向前一点。</span><span>想象的风景 · 非真实路线</span></figcaption>
+            </figure>
             <span class="eyebrow">LET'S MAKE A PLAN</span>
             <h2>这次，想去哪里？</h2>
+            <div class="weather-motif"><img src="/art/weather.svg" alt="" width="42" height="42" /><span>天气随行，计划留白</span></div>
             <p>
               先告诉我你的想法，再一起确认日期、预算和偏好。<br />已经确定的条件，可以直接填在右侧。
             </p>

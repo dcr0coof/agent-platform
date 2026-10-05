@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="240" viewBox="0 0 640 240" fill="none">
+  <defs>
+    <pattern id="grid" width="32" height="32" patternUnits="userSpaceOnUse"><path d="M32 0H0V32" stroke="#476253" stroke-opacity=".08"/></pattern>
+    <clipPath id="frame"><rect x="1" y="1" width="638" height="238" rx="2"/></clipPath>
+  </defs>
+  <g clip-path="url(#frame)">
+    <path fill="#e9e7d7" d="M0 0h640v240H0z"/>
+    <path fill="url(#grid)" d="M0 0h640v240H0z"/>
+    <circle cx="474" cy="68" r="36" fill="#ca734b"/>
+    <circle cx="474" cy="68" r="47" stroke="#ca734b" stroke-opacity=".35"/>
+    <path d="M-30 207 133 74 218 141 334 40 505 211 569 128 677 232V280H-30Z" fill="#b5c1a7"/>
+    <path d="m132 74 30 62-23-10-25 23-15-4zm202-34 42 89-30-20-24 10-22-23z" fill="#e7e8d9"/>
+    <path d="M-20 221 85 155 237 210 393 125 527 201 670 172V260H-20Z" fill="#537362"/>
+    <path d="M-10 240c87-30 130-61 217-30s129 10 191-10 157-1 253 30" fill="#244b40"/>
+    <g stroke="#eff0dd" stroke-opacity=".3">
+      <path d="M-30 250C79 163 153 251 248 234s108-70 218-36 100 30 187 22"/>
+      <path d="M-40 237C73 155 157 230 248 222s106-73 223-37 100 31 182 23"/>
+      <path d="M-40 223C73 141 157 216 248 208s106-73 223-37 100 31 182 23"/>
+    </g>
+    <path d="M148 217c22-46 90-4 116-38s67-18 99-43" stroke="#f3d5a6" stroke-width="2" stroke-dasharray="4 6"/>
+    <circle cx="148" cy="217" r="4" fill="#f9eed7"/>
+    <circle cx="363" cy="136" r="5" fill="#d88759" stroke="#f9eed7" stroke-width="2"/>
+    <g stroke="#355649" stroke-width="1.2"><path d="M40 24v40M20 44h40"/><circle cx="40" cy="44" r="13"/><path d="m40 29 4 15-4 15-4-15z" fill="#355649"/></g>
+    <path d="M558 37h51M558 44h34M558 51h42" stroke="#355649" stroke-opacity=".4"/>
+  </g>
+</svg>
