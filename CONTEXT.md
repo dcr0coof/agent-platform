@@ -43,3 +43,5 @@ The Web workspace now lets users expand paired raw weather tool results beside e
 The owner requested broader functionality connected to weather and travel, delegated routine product/technical choices, and required every meaningful milestone to be published with clear GitHub Issues and PRs. See `docs/travel-agent-roadmap.md` for the delivery sequence.
 
 The Web workspace can create a fresh conversation from the current saved constraints using the existing session-creation API. The original session/history and page-local draft remain intact; no messages, run state or draft are copied. Unsaved constraints, active execution and terminal refresh block this action. It resets the conversation context by creating a new session, not by summarising or deleting history.
+
+The confirmed-constraint count reads the selected session's saved constraints, not the editable form. Draft edits and failed saves leave the count unchanged; a successful save replaces it with the returned persisted state. The UI explicitly labels the saved-only count and warns when the form has unsaved changes. This is a completeness indicator, not a validation of itinerary feasibility.

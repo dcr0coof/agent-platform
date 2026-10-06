@@ -74,17 +74,15 @@ const messages = computed(() => {
   }
   return visible;
 });
-const completeCount = computed(
-  () =>
-    [
-      form.value.origin.trim(),
-      form.value.destination.trim(),
-      form.value.start_date && form.value.end_date,
-      form.value.travelers,
-      form.value.budget,
-      form.value.budget_scope,
-    ].filter(Boolean).length,
-);
+const completeCount = computed(() => {
+  const saved = current.value?.constraints;
+  if (!saved) return 0;
+  return [
+    saved.origin.trim(), saved.destination.trim(),
+    saved.start_date && saved.end_date,
+    saved.travelers, saved.budget, saved.budget_scope,
+  ].filter(Boolean).length;
+});
 const dateLabel = computed(() =>
   form.value.start_date
     ? `${form.value.start_date.slice(5)}${form.value.end_date ? " — " + form.value.end_date.slice(5) : ""}`
@@ -591,7 +589,8 @@ onBeforeUnmount(closeStream);
           <p>未知的条件可以留空，助手会继续询问。</p>
         </div>
         <div class="completion">
-          <span>已确认 {{ completeCount }} / 6 项</span>
+          <span>已确认 {{ completeCount }} / 6 项（仅计已保存条件）</span>
+          <p v-if="dirty" class="notice" role="status">表单有未保存修改，确认计数将在保存成功后更新。</p>
           <div class="segments">
             <i
               v-for="i in 6"
