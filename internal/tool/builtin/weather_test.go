@@ -10,6 +10,37 @@ import (
 	"time"
 )
 
+func TestWeatherOptionalObservationValues(t *testing.T) {
+	for _, tc := range []struct {
+		name, fields, want string
+	}{
+		{"omitted", "", "温度：26°C（体感 未知（未提供）），天气：晴，风向：未知（未提供），风力：未知（未提供），湿度：未知（未提供）"},
+		{"blank", `,"feelsLike":"  ","windDir":"\t","windScale":"\n","humidity":" "`, "温度：26°C（体感 未知（未提供）），天气：晴，风向：未知（未提供），风力：未知（未提供），湿度：未知（未提供）"},
+		{"zero", `,"feelsLike":"0","windDir":"北风","windScale":"0","humidity":"0"`, "温度：26°C（体感 0°C），天气：晴，风向：北风，风力：0级，湿度：0%"},
+		{"mixed", `,"feelsLike":" -2 ","windDir":" 东风 ","humidity":" 50 "`, "温度：26°C（体感 -2°C），天气：晴，风向：东风，风力：未知（未提供），湿度：50%"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.URL.Path == "/geo/v2/city/lookup" {
+					w.Write([]byte(`{"code":"200","location":[{"id":"123","name":"测试城市"}]}`))
+					return
+				}
+				w.Write([]byte(`{"code":"200","updateTime":"2026-09-17T12:27+08:00","now":{"obsTime":"2026-09-17T12:22+08:00","temp":"26","text":"晴"` + tc.fields + `}}`))
+			}))
+			defer s.Close()
+			got, err := NewWeather("test-key", s.URL).Execute(context.Background(), map[string]interface{}{"city": "测试城市"})
+			if err != nil {
+				t.Fatal(err)
+			}
+			for _, want := range []string{tc.want, "来源：QWeather", "Location ID：123", "2026-09-17T12:27+08:00", "2026-09-17T12:22+08:00", "获取时间：", "观测年龄："} {
+				if !strings.Contains(got, want) {
+					t.Errorf("response missing %q: %s", want, got)
+				}
+			}
+		})
+	}
+}
+
 func TestWeatherGzip(t *testing.T) {
 	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Encoding", "gzip")

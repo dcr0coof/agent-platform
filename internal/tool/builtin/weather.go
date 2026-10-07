@@ -203,10 +203,18 @@ func (w *Weather) now(ctx context.Context, locationID string) (string, error) {
 		return "", fmt.Errorf("天气响应缺少温度或天气描述")
 	}
 
-	return fmt.Sprintf("【天气观测】\n%s温度：%s°C（体感 %s°C），天气：%s，风向：%s，风力：%s级，湿度：%s%%",
+	return fmt.Sprintf("【天气观测】\n%s温度：%s°C（体感 %s），天气：%s，风向：%s，风力：%s，湿度：%s",
 		observationEvidence(locationID, fetchedAt, result.UpdateTime, result.Now.ObsTime),
-		result.Now.Temp, result.Now.FeelsLike, result.Now.Text,
-		result.Now.WindDir, result.Now.WindScale, result.Now.Humidity), nil
+		result.Now.Temp, observationValue(result.Now.FeelsLike, "°C"), result.Now.Text,
+		observationValue(result.Now.WindDir, ""), observationValue(result.Now.WindScale, "级"), observationValue(result.Now.Humidity, "%")), nil
+}
+
+func observationValue(value, unit string) string {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return "未知（未提供）"
+	}
+	return value + unit
 }
 
 func observationEvidence(locationID string, fetchedAt time.Time, updateTime, obsTime string) string {
