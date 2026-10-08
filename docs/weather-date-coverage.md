@@ -60,6 +60,10 @@ Provider 时间支持带时区的秒精度 RFC3339 及官方例子中的分钟�
 
 本切片不设通用过期阈值，不保证 API 更新时间与观测时间一致，也不证明真实服务联调成功；固定 HTTP 和时钟样例覆盖时区、旧观测及异常字段。字段语义参见 2026-09-18 核对的 [QWeather Weather Now v7 文档](https://dev.qweather.com/en/docs/api/weather/weather-now-webapi-v7/)。
 
+### 温度一致性校验
+
+2026-10-08，Issue #48：实时温度和每日最低/最高温须能解析为有限数值，且每日最低温不高于最高温；空白天气描述也拒绝。任意必填温度异常时整次工具返回错误，不输出部分天气依据或活动建议。合法负数、0、小数保持有效；这只是数值与区间一致性检查，不设气象合理区间，也不验证可选体感温度的数值或证明数据真实。
+
 ### Provider 迁移
 
 2026-09-17 核对 [QWeather 城市版日预报文档](https://dev.qweather.com/en/docs/api/weather/weather-daily-forecast-webapi-v7/)：当前 `/v7/weather/{days}` 支持 `3d` 等天数参数，`fxDate` 是预报日期，`updateTime` 是 API 更新时间。官方已提示 v7 将弃用，并指向 v1。本次保持既有 v7 配置兼容；后续需独立迁移经纬度、认证和响应结构，结合用户订阅联调后再替换，不能直接把新路径套到旧解析器上。
