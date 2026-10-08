@@ -6,9 +6,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"net/url"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -199,8 +201,11 @@ func (w *Weather) now(ctx context.Context, locationID string) (string, error) {
 	if result.Code != "200" {
 		return "", fmt.Errorf("天气查询失败（code=%s），请确认 Key 是否已激活实时天气 API", result.Code)
 	}
-	if result.Now.Temp == "" || result.Now.Text == "" {
+	if strings.TrimSpace(result.Now.Temp) == "" || strings.TrimSpace(result.Now.Text) == "" {
 		return "", fmt.Errorf("天气响应缺少温度或天气描述")
+	}
+	if _, ok := temperatureValue(result.Now.Temp); !ok {
+		return "", fmt.Errorf("天气响应包含无效温度，无法作为规划依据")
 	}
 
 	return fmt.Sprintf("【天气观测】\n%s温度：%s°C（体感 %s），天气：%s，风向：%s，风力：%s，湿度：%s",
@@ -215,6 +220,11 @@ func observationValue(value, unit string) string {
 		return "未知（未提供）"
 	}
 	return value + unit
+}
+
+func temperatureValue(value string) (float64, bool) {
+	n, err := strconv.ParseFloat(strings.TrimSpace(value), 64)
+	return n, err == nil && !math.IsNaN(n) && !math.IsInf(n, 0)
 }
 
 func observationEvidence(locationID string, fetchedAt time.Time, updateTime, obsTime string) string {
@@ -289,6 +299,11 @@ func (w *Weather) forecast(ctx context.Context, location weatherLocation, date s
 		}
 		if strings.TrimSpace(d.TempMin) == "" || strings.TrimSpace(d.TempMax) == "" || strings.TrimSpace(d.TextDay) == "" {
 			return "", fmt.Errorf("预报响应缺少温度或天气描述")
+		}
+		min, minOK := temperatureValue(d.TempMin)
+		max, maxOK := temperatureValue(d.TempMax)
+		if !minOK || !maxOK || min > max {
+			return "", fmt.Errorf("预报响应包含无效温度或颠倒的温度区间，无法作为规划依据")
 		}
 		dates = append(dates, d.FxDate)
 	}
