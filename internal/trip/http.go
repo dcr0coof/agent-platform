@@ -1,6 +1,7 @@
 package trip
 
 import (
+	"bytes"
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
@@ -129,7 +130,16 @@ func readJSON(w http.ResponseWriter, r *http.Request, v interface{}) bool {
 		return false
 	}
 	r.Body = http.MaxBytesReader(w, r.Body, 32<<10)
-	decoder := json.NewDecoder(r.Body)
+	data, err := io.ReadAll(r.Body)
+	if err != nil {
+		problem(w, 400, "请求格式错误或超过 32 KiB")
+		return false
+	}
+	if trimmed := bytes.TrimSpace(data); len(trimmed) == 0 || trimmed[0] != '{' {
+		problem(w, 400, "只允许一个 JSON 对象")
+		return false
+	}
+	decoder := json.NewDecoder(bytes.NewReader(data))
 	decoder.DisallowUnknownFields()
 	if err := decoder.Decode(v); err != nil {
 		problem(w, 400, "请求格式错误或超过 32 KiB")
@@ -140,7 +150,49 @@ func readJSON(w http.ResponseWriter, r *http.Request, v interface{}) bool {
 		problem(w, 400, "只允许一个 JSON 对象")
 		return false
 	}
+	if err := uniqueRequestFields(json.NewDecoder(bytes.NewReader(data))); err != nil {
+		problem(w, 400, "请求包含重复 JSON 字段，请每个字段只提供一次")
+		return false
+	}
 	return true
+}
+
+// Run after schema validation; all request objects currently map to structs.
+// EqualFold mirrors encoding/json's case-insensitive struct-field aliases.
+func uniqueRequestFields(d *json.Decoder) error {
+	token, err := d.Token()
+	if err != nil {
+		return err
+	}
+	switch token {
+	case json.Delim('{'):
+		var keys []string
+		for d.More() {
+			token, err := d.Token()
+			if err != nil {
+				return err
+			}
+			key := token.(string)
+			for _, previous := range keys {
+				if strings.EqualFold(key, previous) {
+					return fmt.Errorf("duplicate request field")
+				}
+			}
+			keys = append(keys, key)
+			if err := uniqueRequestFields(d); err != nil {
+				return err
+			}
+		}
+		_, err = d.Token()
+	case json.Delim('['):
+		for d.More() {
+			if err := uniqueRequestFields(d); err != nil {
+				return err
+			}
+		}
+		_, err = d.Token()
+	}
+	return err
 }
 
 type sessionInput struct {
