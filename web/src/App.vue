@@ -336,7 +336,14 @@ function exportRecord() {
   link.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
+function guardUnsavedPage(event: BeforeUnloadEvent) {
+  const otherDraft = [...drafts].some(([sid, value]) => sid !== current.value?.id && value.trim());
+  if (!dirty.value && !input.value.trim() && !otherDraft) return;
+  event.preventDefault();
+  event.returnValue = "";
+}
 onMounted(async () => {
+  window.addEventListener("beforeunload", guardUnsavedPage);
   try {
     const config = await api<{ demo: boolean }>("/bootstrap");
     demo.value = config.demo;
@@ -356,7 +363,10 @@ onMounted(async () => {
     error.value = readableError(e);
   }
 });
-onBeforeUnmount(closeStream);
+onBeforeUnmount(() => {
+  closeStream();
+  window.removeEventListener("beforeunload", guardUnsavedPage);
+});
 </script>
 
 <template>

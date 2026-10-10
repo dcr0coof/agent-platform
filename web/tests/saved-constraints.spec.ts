@@ -19,6 +19,7 @@ test("confirmed count follows persisted constraints across edits and failed save
   await expect(count).toContainText("已确认 1 / 6 项");
   await page.getByLabel("目的地", { exact: true }).fill("");
   await expect(count).toContainText("已确认 1 / 6 项");
+  page.once("dialog", dialog => dialog.accept()); // Explicitly discard the unsaved clear.
   await page.reload();
   await expect(count).toContainText("已确认 1 / 6 项");
   await expect(page.getByLabel("目的地", { exact: true })).toHaveValue("杭州");
