@@ -32,6 +32,7 @@ test("unsent drafts follow their trip through creation, switching and sending", 
   await expect(page.locator(".message.user")).toContainText("苏州：希望少走路");
   await page.getByRole("button", { name: /杭州出行/ }).click();
   await expect(input).toHaveValue("杭州：需要雨天备选");
+  page.once("dialog", dialog => dialog.accept()); // Explicitly discard the page-local draft.
   await page.reload();
   await expect(page.getByRole("heading", { name: "杭州出行", exact: true })).toBeVisible();
   await expect(input).toHaveValue("");
