@@ -324,6 +324,15 @@ async function cancel() {
 function usePrompt(value: string) {
   input.value = value;
 }
+async function restoreRequest() {
+  if (busy.value || locked.value || !run.value || !["failed", "cancelled"].includes(run.value.status)) return;
+  if (input.value.trim() && input.value !== run.value.input &&
+      !window.confirm("输入框已有未发送草稿，确定用本次请求替换吗？")) return;
+  input.value = run.value.input;
+  retry = null;
+  await nextTick();
+  document.querySelector<HTMLTextAreaElement>('[aria-label="出行消息"]')?.focus();
+}
 function exportRecord() {
   if (!current.value || busy.value || locked.value) return;
   const record = tripRecord(current.value, messages.value);
@@ -529,6 +538,8 @@ onBeforeUnmount(() => {
             role="status"
           >
             {{ run.error }}<small>这次请求没有加入已完成的对话历史。</small>
+            <button type="button" :disabled="busy || locked" @click="restoreRequest">恢复请求到输入框</button>
+            <small>可修改后重新发送；恢复本身不会执行任务。</small>
           </div>
         </div>
         <div class="composer-wrap">
