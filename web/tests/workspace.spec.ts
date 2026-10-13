@@ -167,7 +167,12 @@ test("cancellation leaves no completed turn and another session remains independ
   await expect(page.locator(".run-notice")).toContainText("用户取消了任务");
   await expect(page.locator(".message.assistant")).toHaveCount(0);
   await page.reload();
-  await expect(page.locator(".message.user")).toHaveCount(0);
+  await expect(page.locator(".run-notice")).toContainText("用户取消了任务");
+  await expect(page.locator(".message.user")).toContainText("这个任务要取消");
+  await expect(page.locator(".message.assistant")).toHaveCount(0);
+  await page.getByRole("button", { name: "恢复请求到输入框" }).click();
+  await expect(page.getByLabel("出行消息")).toHaveValue("这个任务要取消");
+  await expect(page.getByRole("button", { name: "停止任务" })).toHaveCount(0);
   await page.getByRole("button", { name: "开启一段出行" }).click();
   await expect(page.locator(".trip-item")).toHaveCount(2);
   await page.getByLabel("出行消息").fill("还需要确认什么？");

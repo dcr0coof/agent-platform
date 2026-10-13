@@ -144,8 +144,8 @@ async function loadSession(id: string, checkDirty = true) {
     if (ticket !== selection) return;
     closeStream();
     setSession(s);
-    run.value = s.active_run || null;
-    events.value = s.active_run?.events || [];
+    run.value = s.active_run || s.latest_run || null;
+    events.value = run.value?.events || [];
     retry = null;
     if (s.active_run) observe(s.active_run);
     await scrollDown();

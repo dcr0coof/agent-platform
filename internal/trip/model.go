@@ -81,6 +81,7 @@ type Session struct {
 	CreatedAt   string        `json:"created_at"`
 	UpdatedAt   string        `json:"updated_at"`
 	ActiveRun   *Run          `json:"active_run,omitempty"`
+	LatestRun   *Run          `json:"latest_run,omitempty"`
 }
 
 type Event struct {

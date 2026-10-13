@@ -36,6 +36,7 @@ export interface Session {
   revision: number;
   updated_at: string;
   active_run?: Run;
+  latest_run?: Run;
 }
 export const blankConstraints = (): Constraints => ({
   origin: "",
