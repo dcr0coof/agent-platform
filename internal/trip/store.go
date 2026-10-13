@@ -121,13 +121,17 @@ func (s *Store) Get(owner, id string) (Session, error) {
 		return ss, err
 	}
 	var runID string
-	err = s.db.QueryRow("SELECT id FROM runs WHERE session_id=? AND status='running'", id).Scan(&runID)
+	// rowid follows insertion order, including equal or adjusted wall-clock times.
+	err = s.db.QueryRow("SELECT id FROM runs WHERE session_id=? ORDER BY rowid DESC LIMIT 1", id).Scan(&runID)
 	if err == nil {
 		r, e := s.Run(owner, runID)
 		if e != nil {
 			return ss, e
 		}
-		ss.ActiveRun = &r
+		ss.LatestRun = &r
+		if r.Status == "running" {
+			ss.ActiveRun = &r
+		}
 	} else if !errors.Is(err, sql.ErrNoRows) {
 		return ss, err
 	}
