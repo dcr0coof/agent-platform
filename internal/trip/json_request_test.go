@@ -66,3 +66,58 @@ func TestRequestJSONExistingBoundaries(t *testing.T) {
 		t.Fatal("independent objects or text rejected")
 	}
 }
+
+func TestJSONMediaTypes(t *testing.T) {
+	for _, tc := range []struct {
+		header string
+		valid  bool
+	}{
+		{"application/json", true}, {"Application/JSON", true},
+		{"application/json; charset=utf-8", true}, {`application/json; charset="UTF-8"`, true},
+		{"", false}, {"application/jsonp", false}, {"application/json-extra", false},
+		{"text/plain", false}, {"application/json; charset", false},
+		{`application/json; charset="unfinished`, false},
+		{"application/json, text/plain", false},
+	} {
+		t.Run(tc.header, func(t *testing.T) {
+			w := httptest.NewRecorder()
+			r := httptest.NewRequest("POST", "/", strings.NewReader(`{"title":"ok"}`))
+			r.Header.Set("Content-Type", tc.header)
+			var input sessionInput
+			if ok := readJSON(w, r, &input); ok != tc.valid || (!ok && w.Code != 415) {
+				t.Fatalf("accepted=%v status=%d", ok, w.Code)
+			}
+		})
+	}
+}
+
+func TestRejectedMediaTypeDoesNotMutate(t *testing.T) {
+	h := setup(t, DemoRunner{Delay: time.Millisecond})
+	s := h.newSession()
+	for _, tc := range []struct{ method, path, body string }{
+		{"POST", "/api/sessions", `{"title":"unexpected"}`},
+		{"PUT", "/api/sessions/" + s.ID, fmt.Sprintf(`{"revision":%d,"title":"unexpected"}`, s.Revision)},
+		{"POST", "/api/sessions/" + s.ID + "/runs", encode(startBody("unexpected", "media-key", s.Revision))},
+	} {
+		req, _ := http.NewRequest(tc.method, h.server.URL+tc.path, strings.NewReader(tc.body))
+		req.Header.Set("Content-Type", "application/jsonp")
+		resp, err := h.client.Do(req)
+		if err != nil {
+			t.Fatal(err)
+		}
+		resp.Body.Close()
+		if resp.StatusCode != 415 {
+			t.Fatalf("%s %s: %d", tc.method, tc.path, resp.StatusCode)
+		}
+	}
+	var got Session
+	h.request("GET", "/api/sessions/"+s.ID, nil, 200, &got)
+	if got.Revision != s.Revision || got.Title != s.Title || got.LatestRun != nil || len(got.Messages) != 0 {
+		t.Fatalf("rejected request changed state: %+v", got)
+	}
+	var list []Session
+	h.request("GET", "/api/sessions", nil, 200, &list)
+	if len(list) != 1 {
+		t.Fatal("rejected create persisted a session")
+	}
+}

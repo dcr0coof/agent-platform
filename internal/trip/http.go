@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"mime"
 	"net"
 	"net/http"
 	"net/url"
@@ -125,7 +126,8 @@ func fail(w http.ResponseWriter, err error) {
 	}
 }
 func readJSON(w http.ResponseWriter, r *http.Request, v interface{}) bool {
-	if !strings.HasPrefix(r.Header.Get("Content-Type"), "application/json") {
+	mediaType, _, err := mime.ParseMediaType(r.Header.Get("Content-Type"))
+	if err != nil || mediaType != "application/json" {
 		problem(w, 415, "请求必须使用 JSON")
 		return false
 	}
