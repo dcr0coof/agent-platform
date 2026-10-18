@@ -47,6 +47,13 @@ func TestCLI(t *testing.T) {
 				t.Errorf("clear failed: %+v", body.Messages)
 			}
 			w.Write([]byte(`{"choices":[{"message":{"content":"fresh session"},"finish_reason":"stop"}]}`))
+		case 4:
+			w.Write([]byte(`{"error":{"message":"fake-key private-test-input","type":"private-upstream-type"}}`))
+		case 5:
+			if len(body.Messages) != 2 || body.Messages[1].Content != "recover" {
+				t.Errorf("failed turn leaked into recovery history: %+v", body.Messages)
+			}
+			w.Write([]byte(`{"choices":[{"message":{"content":"recovery succeeded"},"finish_reason":"stop"}]}`))
 		default:
 			t.Error("unexpected request")
 		}
@@ -58,6 +65,7 @@ func TestCLI(t *testing.T) {
 		fail              bool
 	}{
 		{name: "conversation", input: "\n2+3\n/clear\nhello\n/exit\n", want: "fresh session"},
+		{name: "api_error_recovery", input: "private-test-input\nrecover\n/exit\n", want: "recovery succeeded"},
 		{name: "eof", input: "", want: "已启动"},
 		{name: "help", args: []string{"-h"}, want: "timeout"},
 		{name: "invalid_timeout", args: []string{"-timeout=0s"}, want: "timeout 必须大于 0", fail: true},
@@ -78,9 +86,19 @@ func TestCLI(t *testing.T) {
 			if ctx.Err() != nil || (err != nil) != tc.fail || !strings.Contains(string(output), tc.want) {
 				t.Fatalf("CLI: %v\n%s", err, output)
 			}
+			if tc.name == "api_error_recovery" {
+				if !strings.Contains(string(output), "LLM API returned an error") {
+					t.Fatalf("missing local API error: %s", output)
+				}
+				for _, private := range []string{"fake-key", "private-test-input", "private-upstream-type"} {
+					if strings.Contains(string(output), private) {
+						t.Fatalf("provider content exposed in CLI output: %s", private)
+					}
+				}
+			}
 		})
 	}
-	if requests.Load() != 3 {
-		t.Fatalf("expected 3 LLM calls, got %d", requests.Load())
+	if requests.Load() != 5 {
+		t.Fatalf("expected 5 LLM calls, got %d", requests.Load())
 	}
 }

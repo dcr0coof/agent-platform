@@ -44,6 +44,8 @@ The Web workspace now lets users expand paired raw weather tool results beside e
 
 ## Source of direction
 
+OpenAI-compatible HTTP success responses containing a non-null API error now return a fixed local error. Provider message/type fields are not echoed into CLI output, even when choices coexist with the error. The CLI can process the next input after failure without retaining the failed turn. This only covers API error envelopes, not arbitrary transport errors or successful model content.
+
 The owner requested broader functionality connected to weather and travel, delegated routine product/technical choices, and required every meaningful milestone to be published with clear GitHub Issues and PRs. See `docs/travel-agent-roadmap.md` for the delivery sequence.
 
 The Web workspace can create a fresh conversation from the current saved constraints using the existing session-creation API. The original session/history and page-local draft remain intact; no messages, run state or draft are copied. Unsaved constraints, active execution and terminal refresh block this action. It resets the conversation context by creating a new session, not by summarising or deleting history.
