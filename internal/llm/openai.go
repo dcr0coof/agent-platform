@@ -121,7 +121,9 @@ func (c *OpenAIClient) Chat(ctx context.Context, messages []Message, tools []Too
 	}
 
 	if chatResp.Error != nil {
-		return nil, fmt.Errorf("API error: %s (%s)", chatResp.Error.Message, chatResp.Error.Type)
+		// Providers may reflect credentials or request content in either field.
+		// This error reaches the CLI, so only return a locally defined message.
+		return nil, fmt.Errorf("LLM API returned an error")
 	}
 
 	if len(chatResp.Choices) == 0 {

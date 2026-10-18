@@ -48,6 +48,21 @@ func TestOpenAICancellation(t *testing.T) {
 	}
 }
 
+func TestOpenAIErrorEnvelopeDoesNotExposeProviderContent(t *testing.T) {
+	for _, body := range []string{
+		`{"error":{"message":"fake-secret private-request","type":"private-type"}}`,
+		`{"error":{"message":"fake-secret","type":"private-type"},"choices":[{"message":{"content":"must not be accepted"},"finish_reason":"stop"}]}`,
+		`{"error":{}}`,
+	} {
+		s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.Write([]byte(body)) }))
+		response, err := NewOpenAI("fake-secret", s.URL, "model", 100, 0).Chat(context.Background(), nil, nil)
+		s.Close()
+		if response != nil || err == nil || err.Error() != "LLM API returned an error" {
+			t.Fatalf("expected local error and no response, got %+v, %v", response, err)
+		}
+	}
+}
+
 func TestOpenAIRequestValues(t *testing.T) {
 	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/chat/completions" {
