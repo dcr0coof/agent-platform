@@ -219,6 +219,12 @@ func observationValue(value, unit string) string {
 	if value == "" {
 		return "未知（未提供）"
 	}
+	if unit == "°C" || unit == "%" {
+		n, valid := temperatureValue(value)
+		if !valid || (unit == "%" && (n < 0 || n > 100)) {
+			return "未知（数值无效）"
+		}
+	}
 	return value + unit
 }
 
@@ -327,8 +333,8 @@ func (w *Weather) forecast(ctx context.Context, location weatherLocation, date s
 			continue
 		}
 		matched = true
-		fmt.Fprintf(&output, "  %s：%s，%s~%s°C，%s风%s级\n",
-			d.FxDate, d.TextDay, d.TempMin, d.TempMax, d.WindDirDay, d.WindScaleDay)
+		fmt.Fprintf(&output, "  %s：%s，%s~%s°C，风向：%s，风力：%s\n",
+			d.FxDate, d.TextDay, d.TempMin, d.TempMax, observationValue(d.WindDirDay, ""), observationValue(d.WindScaleDay, "级"))
 		fmt.Fprintf(&output, "    %s\n", precipitationAlternative(d.Precip, result.UpdateTime, fetchedAt, d.FxDate, localDate))
 	}
 	if !matched {

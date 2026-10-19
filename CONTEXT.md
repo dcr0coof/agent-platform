@@ -10,6 +10,8 @@ The weather tool accepts an optional destination forecast date, checks membershi
 
 The current-observation path also returns provider/location, retrieval time, API update time, observation time and observation age. Missing, invalid or future observation timestamps do not become fresh evidence; no universal weather expiry threshold is imposed. This is the bounded Issue #14 slice, with fixed HTTP tests rather than a live provider verification.
 
+Optional feels-like temperatures must be finite numbers and humidity must be finite within 0–100%. Missing and invalid optional values are labelled separately as unknown, while valid core observations remain available. Forecast wind direction/scale now also label missing fields explicitly; nonempty wind values are not semantically validated. This does not certify provider accuracy or model adherence.
+
 ## Vocabulary
 
 The OpenAI-compatible client rejects serialized request bodies over 1 MiB before transport, including tool schemas, system constraints and tool-loop growth. This fixed UTF-8/JSON byte boundary preserves complete message/tool pairs by failing the turn instead of truncating it. It is not a token budget, provider context guarantee or a cap on serialization memory; automatic summarisation and pruning remain planned.
