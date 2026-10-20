@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from "vue";
 import { tripRecord } from "./export-record";
+import { tripCalendar } from "./export-calendar";
 import {
   api,
   blankConstraints,
@@ -336,7 +337,17 @@ async function restoreRequest() {
 function exportRecord() {
   if (!current.value || busy.value || locked.value) return;
   const record = tripRecord(current.value, messages.value);
-  const url = URL.createObjectURL(new Blob([record.text], { type: "text/plain;charset=utf-8" }));
+  download(record, "text/plain;charset=utf-8");
+}
+function exportCalendar() {
+  if (!current.value || busy.value || locked.value || dirty.value) return;
+  try {
+    download(tripCalendar(current.value), "text/calendar;charset=utf-8");
+    notice.value = "已下载出行日期草稿；请自行导入日历并核对。重复导入的处理取决于日历应用。";
+  } catch (e) { error.value = readableError(e); }
+}
+function download(record: { text: string; filename: string }, type: string) {
+  const url = URL.createObjectURL(new Blob([record.text], { type }));
   const link = document.createElement("a");
   link.href = url;
   link.download = record.filename;
@@ -457,6 +468,7 @@ onBeforeUnmount(() => {
           </div>
           <div class="trip-actions">
           <button class="export-record" :disabled="busy || locked" @click="exportRecord" title="下载已保存约束、已完成对话与天气依据；不含草稿">导出出行记录</button>
+          <button class="export-record" :disabled="busy || locked || dirty || !current.constraints.start_date || !current.constraints.end_date" @click="exportCalendar" title="先保存开始和结束日期；下载一个全天出行草稿，不含聊天，不代表预订">下载出行日历</button>
           <button class="export-record" :disabled="busy || locked || dirty" @click="createSession(true)" title="请先保存约束并等待运行完成；仅复制已保存约束，原对话和草稿保留">沿用约束开新对话</button>
           <span class="saved-note"
             >◉ {{ dirty ? "有未保存修改" : "已保存到本机" }}</span
