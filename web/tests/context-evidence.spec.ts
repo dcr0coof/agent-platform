@@ -1,0 +1,53 @@
+import { test, expect } from "@playwright/test";
+
+test("live context evidence survives reload and does not follow a new trip", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.locator(".trip-item")).toHaveCount(1);
+  const panel = page.getByLabel("本次运行的上下文", { exact: true });
+  await expect(panel).toHaveCount(0);
+  await page.getByLabel("出行消息").fill("检查出行条件");
+  await page.getByRole("button", { name: "发送消息" }).click();
+  await panel.locator("summary").focus();
+  await page.keyboard.press("Enter");
+  await expect(panel.locator("pre")).toHaveText("演示：读取这次出行的已确认约束");
+  await expect(page.locator(".message.assistant")).toHaveCount(1);
+  await page.reload();
+  await panel.locator("summary").click();
+  await expect(panel).toContainText("演示模式不调用模型");
+  await expect(panel.locator("pre")).toHaveText("演示：读取这次出行的已确认约束");
+  await page.getByRole("button", { name: "开启一段出行" }).click();
+  await expect(page.locator(".trip-item")).toHaveCount(2);
+  await expect(panel).toHaveCount(0);
+});
+
+test("restored context is escaped, missing evidence stays unknown, and a new run clears it", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.locator(".trip-item")).toHaveCount(1);
+  const sessions = await (await page.request.get("/api/sessions")).json();
+  const id = sessions[0].id;
+  const session = await (await page.request.get(`/api/sessions/${id}`)).json();
+  const detail = "载入 4/8 条消息、1/3 个完整回合；4 条历史消息未载入\n<script>window.injected=true</script>";
+  session.latest_run = { id: "restored", session_id: id, input: "此前的请求", status: "completed", events: [{ seq: 1, type: "context.ready", detail, created_at: "2026-10-21T00:00:00Z" }] };
+  await page.route(`**/api/sessions/${id}`, route => route.fulfill({ json: session }));
+  await page.reload();
+  const panel = page.getByLabel("本次运行的上下文", { exact: true });
+  await panel.locator("summary").click();
+  await expect(panel.locator("pre")).toHaveText(detail);
+  await expect(panel).toContainText("完整记录仍保存在当前出行");
+  await expect(panel.locator("script")).toHaveCount(0);
+  expect(await page.evaluate(() => (window as any).injected)).toBeUndefined();
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  session.latest_run.events = [];
+  await page.reload();
+  await panel.locator("summary").click();
+  await expect(panel).toContainText("不能据此推断历史加载量");
+  await expect(panel.locator("pre")).toHaveCount(0);
+  await page.unroute(`**/api/sessions/${id}`);
+  await page.getByLabel("出行消息").fill("开始新请求");
+  await page.getByRole("button", { name: "发送消息" }).click();
+  await expect(panel).not.toHaveAttribute("open", "");
+  await panel.locator("summary").click();
+  await expect(panel.locator("pre")).toHaveText("演示：读取这次出行的已确认约束");
+  await expect(panel).not.toContainText("4/8");
+});
