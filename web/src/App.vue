@@ -41,6 +41,7 @@ let retry: {
   revision: number;
 } | null = null;
 const running = computed(() => run.value?.status === "running");
+const contextEvidence = computed(() => events.value.find((event) => event.type === "context.ready"));
 const settling = computed(() => !!run.value && refreshingRun.value === run.value.id);
 const locked = computed(() => running.value || settling.value);
 const dirty = computed(
@@ -555,6 +556,16 @@ onBeforeUnmount(() => {
           </div>
         </div>
         <div class="composer-wrap">
+          <details v-if="run" :key="run.id" class="weather-evidence context-evidence" aria-label="本次运行的上下文">
+            <summary>本次运行用了哪些上下文？</summary>
+            <template v-if="contextEvidence">
+              <pre>{{ contextEvidence.detail }}</pre>
+              <p>这是本次运行开始时记录的上下文信息，刷新后仍可查看；不代表下一次请求或后续工具调用的用量。</p>
+              <p>演示模式不调用模型。真实模式的历史消息数与字节数不是 token 数，也不代表模型上下文剩余额度。</p>
+              <p>若有历史未载入，完整记录仍保存在当前出行。请重新提供回答所需的旧信息；重要条件请确认保存在出行约束中。</p>
+            </template>
+            <p v-else>本次运行尚无可用的上下文记录，不能据此推断历史加载量。</p>
+          </details>
           <form class="composer" @submit.prevent="send">
             <textarea
               v-model="input"
