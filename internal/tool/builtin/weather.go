@@ -313,11 +313,9 @@ func (w *Weather) forecast(ctx context.Context, location weatherLocation, date s
 		}
 		dates = append(dates, d.FxDate)
 	}
-	if result.UpdateTime == "" {
-		result.UpdateTime = "未提供，无法确认数据新鲜度"
-	}
+	updated, _ := providerTimeLabel(result.UpdateTime, fetchedAt)
 	var output strings.Builder
-	fmt.Fprintf(&output, "【3天天气预报】\n来源：QWeather\nLocation ID：%s\n获取时间：%s\n预报更新时间：%s\n可用预报日期：%s\n", location.ID, fetchedAt.Format(time.RFC3339), result.UpdateTime, strings.Join(dates, "、"))
+	fmt.Fprintf(&output, "【3天天气预报】\n来源：QWeather\nLocation ID：%s\n获取时间：%s\n预报更新时间：%s\n可用预报日期：%s\n", location.ID, fetchedAt.Format(time.RFC3339), updated, strings.Join(dates, "、"))
 	localDate := destinationDate(location.Timezone, fetchedAt)
 	if localDate == "" {
 		output.WriteString("目的地时区或当地日期：未知，无法判定活动日期有效性\n")
