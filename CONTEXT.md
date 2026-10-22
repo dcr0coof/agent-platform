@@ -46,6 +46,8 @@ The Web workspace now lets users expand paired raw weather tool results beside e
 
 ## Source of direction
 
+Forecast update timestamps now use the same validated label as current observations: missing/blank and malformed values are unknown, future timestamps are explicitly anomalous, and valid zoned minute/second timestamps are retained. Invalid raw text is not echoed. Activity freshness continues to use the original timestamp and the existing six-hour policy; labelling does not certify current weather or provider accuracy.
+
 The selected run's first context.ready event is exposed beside the composer in a native disclosure. It uses persisted/SSE evidence verbatim with escaped text and clears on run/session changes; an absent event is unknown rather than zero loaded history. It describes the initial request only, not later tool-loop growth, token usage or the next request. Demo records remain explicitly non-model evidence. Omitted history recovery still requires the user to provide missing information or save important constraints.
 
 Saved trip dates can be downloaded as a local iCalendar draft containing one tentative, transparent all-day event. The inclusive trip end date becomes an exclusive calendar end date. Export is blocked while constraints are dirty, loading or running, or dates are missing; chat and personal preferences are excluded. Import and duplicate handling belong to the user's calendar application; this does not create a booking or write to a remote calendar.

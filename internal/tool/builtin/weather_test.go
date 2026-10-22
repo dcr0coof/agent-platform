@@ -143,7 +143,7 @@ func TestWeatherLookupAndQueries(t *testing.T) {
 			if err != nil || !strings.Contains(result, "晴") || len(paths) != 2 {
 				t.Fatalf("weather failed: %s %v %v", result, err, paths)
 			}
-			if kind == "forecast" && !strings.Contains(result, "未提供，无法确认数据新鲜度") {
+			if kind == "forecast" && !strings.Contains(result, "预报更新时间：未提供，时间未知") {
 				t.Fatal("missing provider timestamp was not disclosed")
 			}
 		})
