@@ -129,6 +129,8 @@ go test -race ./...
 
 后续产品方向为天气感知的出行与生活规划 Agent。出行会话已实现，下一阶段覆盖天气备选、攻略 RAG、上下文预算及地图路线。具体阶段见 [出行 Agent 路线](docs/travel-agent-roadmap.md)；每个功能通过 GitHub Issue 和关联 PR 记录实现与验证，开发流程见 [AGENTS.md](AGENTS.md)。
 
+可选本地攻略关键词工具：CLI或真实模型工作台启动参数 `-guide-file ./docs/examples/travel-guide.md`。返回原文、行号与文件版本；详细数据边界、示例和限制见 [攻略检索](docs/local-guide-retrieval.md)。
+
 ## License
 
 原项目声明使用 MIT；目前仓库没有独立 LICENSE 文件，正式分发前需补齐版权主体与许可证正文。

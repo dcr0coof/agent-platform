@@ -14,6 +14,8 @@ Optional feels-like temperatures must be finite numbers and humidity must be fin
 
 ## Vocabulary
 
+An opt-in -guide-file registers search_travel_guide in the CLI and real-model server. One operator-provided UTF-8 file becomes an immutable startup snapshot; literal AND keywords return up to three paragraphs in source order with filename, raw SHA-256 and line citations, or explicit empty evidence. This is a bounded lexical baseline, not semantic retrieval or completed upload RAG. All local sessions share the configured source; hits are disclosed to the model and retained in history. No workspace isolation, PDF/upload, live refresh or dedicated citation UI is claimed. See docs/local-guide-retrieval.md.
+
 The OpenAI-compatible client rejects serialized request bodies over 1 MiB before transport, including tool schemas, system constraints and tool-loop growth. This fixed UTF-8/JSON byte boundary preserves complete message/tool pairs by failing the turn instead of truncating it. It is not a token budget, provider context guarantee or a cap on serialization memory; automatic summarisation and pruning remain planned.
 
 The Web run record and terminal event now expose this local request-size error with byte counts and recovery advice. Only this typed local error is public; provider and wrapper errors remain hidden. An oversized later request does not undo earlier model/tool calls, and a failed turn leaves successful history unchanged.

@@ -31,6 +31,7 @@ func run() error {
 	webDir := flag.String("web-dir", "web/dist", "构建后的前端目录")
 	configPath := flag.String("config", "configs/config.yaml", "模型配置")
 	demo := flag.Bool("demo", false, "显式启用本地演示，不调用外部模型和工具")
+	guideFile := flag.String("guide-file", "", "可选共享攻略 UTF-8 文件；命中内容会发送给模型")
 	timeout := flag.Duration("timeout", 2*time.Minute, "每轮任务总超时")
 	devOrigin := flag.String("dev-origin", "", "可选本机 Vite 开发源，例如 http://127.0.0.1:5173")
 	flag.Parse()
@@ -47,6 +48,9 @@ func run() error {
 	}
 	var runner trip.Runner
 	if *demo {
+		if *guideFile != "" {
+			return fmt.Errorf("-guide-file 需要真实模型模式；-demo 不调用检索工具")
+		}
 		runner = trip.DemoRunner{}
 	} else {
 		cfg, err := config.Load(*configPath)
@@ -59,6 +63,13 @@ func run() error {
 		reg := tool.NewRegistry()
 		reg.Register(&builtin.Calculator{})
 		reg.Register(&builtin.DateTime{})
+		if *guideFile != "" {
+			guide, err := builtin.NewTravelGuide(*guideFile)
+			if err != nil {
+				return err
+			}
+			reg.Register(guide)
+		}
 		if cfg.Weather.APIKey != "" {
 			reg.Register(builtin.NewWeather(cfg.Weather.APIKey, cfg.Weather.BaseURL))
 		}
