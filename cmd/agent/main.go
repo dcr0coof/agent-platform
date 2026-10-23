@@ -28,6 +28,7 @@ func main() {
 func run() error {
 	configPath := flag.String("config", "configs/config.yaml", "配置文件路径（不存在时使用默认值和环境变量）")
 	timeout := flag.Duration("timeout", 2*time.Minute, "每轮对话总超时，例如 30s、2m")
+	guideFile := flag.String("guide-file", "", "可选共享攻略 UTF-8 文件；命中内容会发送给模型")
 	flag.Parse()
 	if *timeout <= 0 {
 		return fmt.Errorf("timeout 必须大于 0")
@@ -54,6 +55,13 @@ func run() error {
 	reg := tool.NewRegistry()
 	reg.Register(&builtin.Calculator{})
 	reg.Register(&builtin.DateTime{})
+	if *guideFile != "" {
+		guide, err := builtin.NewTravelGuide(*guideFile)
+		if err != nil {
+			return err
+		}
+		reg.Register(guide)
+	}
 
 	// 天气工具：从配置加载 API Key
 	if cfg.Weather.APIKey != "" {
