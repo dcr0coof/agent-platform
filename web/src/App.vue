@@ -2,6 +2,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from "vue";
 import { tripRecord } from "./export-record";
 import { tripCalendar } from "./export-calendar";
+import GuideEvidence from "./GuideEvidence.vue";
 import {
   api,
   blankConstraints,
@@ -51,25 +52,30 @@ const dirty = computed(
       JSON.stringify(form.value) !== JSON.stringify(current.value.constraints)),
 );
 const messages = computed(() => {
-  const visible: (Message & { weatherEvidence: string[] })[] = [];
-  const pending = new Set<string>();
+  const visible: (Message & { weatherEvidence: string[]; guideEvidence: string[] })[] = [];
+  const pending = new Map<string, string>();
   let evidence: string[] = [];
+  let guides: string[] = [];
   let inTurn = false;
   for (const message of current.value?.messages || []) {
     if (message.role === "user") {
       pending.clear();
       evidence = [];
+      guides = [];
       inTurn = true;
-      visible.push({ ...message, weatherEvidence: [] });
+      visible.push({ ...message, weatherEvidence: [], guideEvidence: [] });
     } else if (message.role === "assistant" && message.tool_calls?.length) {
       if (inTurn) for (const call of message.tool_calls) {
-        if (call.function.name === "weather") pending.add(call.id);
+        if (["weather", "search_travel_guide"].includes(call.function.name)) pending.set(call.id, call.function.name);
       }
-    } else if (message.role === "tool" && message.tool_call_id && pending.delete(message.tool_call_id)) {
-      evidence.push(message.content);
+    } else if (message.role === "tool" && message.tool_call_id && pending.has(message.tool_call_id)) {
+      if (pending.get(message.tool_call_id) === "weather") evidence.push(message.content);
+      else guides.push(message.content);
+      pending.delete(message.tool_call_id);
     } else if (message.role === "assistant" && !message.tool_calls?.length) {
-      visible.push({ ...message, weatherEvidence: evidence });
+      visible.push({ ...message, weatherEvidence: evidence, guideEvidence: guides });
       evidence = [];
+      guides = [];
       pending.clear();
       inTurn = false;
     }
@@ -523,6 +529,11 @@ onBeforeUnmount(() => {
                   <summary>天气依据 · {{ message.weatherEvidence.length }} 条工具结果</summary>
                   <p>本轮调用的原始记录，可能包含未知或错误信息；历史记录不代表当前天气。</p>
                   <pre v-for="(evidence, i) in message.weatherEvidence" :key="i">{{ evidence }}</pre>
+                </details>
+                <details v-if="message.guideEvidence.length" class="weather-evidence guide-evidence">
+                  <summary>攻略依据 · {{ message.guideEvidence.length }} 条工具结果</summary>
+                  <p>本轮工具返回的静态资料，不证明回答正确或信息仍有效；请按版本与行号核对原文。</p>
+                  <GuideEvidence v-for="(raw, i) in message.guideEvidence" :key="i" :raw="raw" />
                 </details>
               </div>
             </article></template

@@ -14,7 +14,9 @@ Optional feels-like temperatures must be finite numbers and humidity must be fin
 
 ## Vocabulary
 
-An opt-in -guide-file registers search_travel_guide in the CLI and real-model server. One operator-provided UTF-8 file becomes an immutable startup snapshot; literal AND keywords return up to three paragraphs in source order with filename, raw SHA-256 and line citations, or explicit empty evidence. This is a bounded lexical baseline, not semantic retrieval or completed upload RAG. All local sessions share the configured source; hits are disclosed to the model and retained in history. No workspace isolation, PDF/upload, live refresh or dedicated citation UI is claimed. See docs/local-guide-retrieval.md.
+An opt-in -guide-file registers search_travel_guide in the CLI and real-model server. One operator-provided UTF-8 file becomes an immutable startup snapshot; literal AND keywords return up to three paragraphs in source order with filename, raw SHA-256 and line citations, or explicit empty evidence. This is a bounded lexical baseline, not semantic retrieval or completed upload RAG. All local sessions share the configured source; hits are disclosed to the model and retained in history. No workspace isolation, PDF/upload or live refresh is claimed. See docs/local-guide-retrieval.md.
+
+Web completed answers now expose paired guide evidence in a native disclosure, with source/version/lines/plain-text passages and explicit empty/more-match states. Unparseable results remain escaped raw text with unknown provenance. Tool-call IDs are scoped to the user turn and selected session; persisted history restores the cards. This inspects tool records, not model citation adherence; Markdown export does not yet include guide evidence.
 
 The OpenAI-compatible client rejects serialized request bodies over 1 MiB before transport, including tool schemas, system constraints and tool-loop growth. This fixed UTF-8/JSON byte boundary preserves complete message/tool pairs by failing the turn instead of truncating it. It is not a token budget, provider context guarantee or a cap on serialization memory; automatic summarisation and pruning remain planned.
 
