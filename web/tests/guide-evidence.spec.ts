@@ -1,4 +1,14 @@
 import { test, expect } from "@playwright/test";
+import { readFile } from "node:fs/promises";
+
+async function downloadText(page: import("@playwright/test").Page) {
+  const pending = page.waitForEvent("download");
+  await page.getByRole("button", { name: "导出出行记录", exact: true }).click();
+  const download = await pending;
+  expect(await download.failure()).toBeNull();
+  expect(download.suggestedFilename()).toMatch(/\.txt$/);
+  return readFile((await download.path())!, "utf8");
+}
 
 test("guide citations are paired, escaped, restored and separate from weather", async ({ page }) => {
   await page.goto("/");
@@ -43,8 +53,15 @@ test("guide citations are paired, escaped, restored and separate from weather", 
   await page.reload();
   await expect(card).toHaveCount(1);
   await page.setViewportSize({ width: 1440, height: 1000 });
+  const record = await downloadText(page);
+  expect(record).toContain(JSON.stringify(evidence));
+  expect(record).toContain("天气专属记录");
+  expect(record).toContain("不代表实时事实或回答已正确引用");
+  expect(record.split(JSON.stringify(evidence))).toHaveLength(2);
+  for (const text of ["计算结果", "重复结果", "跨轮结果", "孤立结果"]) expect(record).not.toContain(text);
   await page.getByRole("button", { name: "开启一段出行" }).click();
   await expect(card).toHaveCount(0);
+  expect(await downloadText(page)).not.toContain(evidence.sha256);
 });
 
 test("no hit and invalid guide results never invent citations", async ({ page }) => {
@@ -70,4 +87,6 @@ test("no hit and invalid guide results never invent citations", async ({ page })
   await expect(card.locator("pre")).toHaveText(invalid);
   await expect(card.locator("b")).toHaveCount(0);
   await expect(card.locator(".guide-version")).toHaveCount(1);
+  const record = await downloadText(page);
+  for (const raw of [JSON.stringify(valid), ...invalid]) expect(record).toContain(raw);
 });
