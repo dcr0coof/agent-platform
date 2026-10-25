@@ -3,7 +3,7 @@ import type { Session } from "./api";
 // Export the same completed messages and paired evidence that the page displays.
 export function tripRecord(
   session: Session,
-  messages: { role: string; content: string; weatherEvidence: string[] }[],
+  messages: { role: string; content: string; weatherEvidence: string[]; guideEvidence: string[] }[],
   now = new Date(),
 ) {
   const c = session.constraints;
@@ -13,6 +13,7 @@ export function tripRecord(
     `记录保存时间：${session.updated_at}`,
     "仅含已保存约束和已完成对话；不含未发送消息、未保存修改及失败/取消运行。",
     "历史天气依据不代表当前天气；此记录不是预订凭证或已确认行程。",
+    "攻略依据是静态资料的工具记录，不代表实时事实或回答已正确引用；错误与未知信息保留原文。",
     "",
     "=== 已保存出行约束 ===",
     `出发地：${c.origin || "待确认"}`,
@@ -30,6 +31,8 @@ export function tripRecord(
     lines.push("", message.role === "user" ? "你：" : "行迹助手：", message.content);
     for (const evidence of message.weatherEvidence)
       lines.push("", "天气工具原始依据（可能包含未知或错误信息）：", evidence);
+    for (const evidence of message.guideEvidence)
+      lines.push("", "攻略工具原始依据（JSON 中含来源版本与原文行号；异常结果可能缺失）：", evidence);
   }
   const title = session.title.replace(/[<>:"/\\|?*\u0000-\u001f\u007f]/g, "_").slice(0, 40);
   return {
