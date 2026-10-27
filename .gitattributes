@@ -1,2 +1,3 @@
 # gofmt emits LF on every platform. Keep Windows checkouts byte-identical.
 *.go text eol=lf
+eval/travel-guide/* text eol=lf
