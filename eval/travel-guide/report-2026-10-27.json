@@ -1,0 +1,163 @@
+{
+  "strategy": "literal-and-source-order-v1",
+  "guide_sha256": "970568142720f0ee085057a1395450cf815fbb8f993e4b952b4f1df7d6c32f6f",
+  "suite_sha256": "5c0f5b5eab086fb33f2b2f198cf8f9527e1471ca3f63579705e74c73a6792f03",
+  "total": 12,
+  "exact": 10,
+  "no_evidence_cases": 3,
+  "no_evidence_false_positives": 0,
+  "cases": [
+    {
+      "id": "museum",
+      "query": "杭州 博物馆",
+      "expected_start_lines": [
+        3
+      ],
+      "expected_more_matches": false,
+      "actual_start_lines": [
+        3
+      ],
+      "actual_more_matches": false,
+      "exact": true
+    },
+    {
+      "id": "shanghai",
+      "query": "上海 雨天",
+      "expected_start_lines": [
+        7
+      ],
+      "expected_more_matches": false,
+      "actual_start_lines": [
+        7
+      ],
+      "actual_more_matches": false,
+      "exact": true
+    },
+    {
+      "id": "top_three",
+      "query": "杭州 雨天",
+      "expected_start_lines": [
+        3,
+        9,
+        11
+      ],
+      "expected_more_matches": true,
+      "actual_start_lines": [
+        3,
+        9,
+        11
+      ],
+      "actual_more_matches": true,
+      "exact": true
+    },
+    {
+      "id": "sunny_walk",
+      "query": "杭州 晴天",
+      "expected_start_lines": [
+        5
+      ],
+      "expected_more_matches": false,
+      "actual_start_lines": [
+        5
+      ],
+      "actual_more_matches": false,
+      "exact": true
+    },
+    {
+      "id": "unknown_destination",
+      "query": "火星",
+      "expected_start_lines": [],
+      "expected_more_matches": false,
+      "actual_start_lines": [],
+      "actual_more_matches": false,
+      "exact": true
+    },
+    {
+      "id": "case_insensitive",
+      "query": "MUSEUM",
+      "expected_start_lines": [
+        3
+      ],
+      "expected_more_matches": false,
+      "actual_start_lines": [
+        3
+      ],
+      "actual_more_matches": false,
+      "exact": true
+    },
+    {
+      "id": "rain_paraphrase",
+      "query": "杭州 下雨",
+      "expected_start_lines": [
+        3,
+        9,
+        11
+      ],
+      "expected_more_matches": true,
+      "actual_start_lines": [],
+      "actual_more_matches": false,
+      "exact": false
+    },
+    {
+      "id": "indoor",
+      "query": "杭州 室内",
+      "expected_start_lines": [
+        3,
+        9,
+        11
+      ],
+      "expected_more_matches": true,
+      "actual_start_lines": [
+        3,
+        9,
+        11
+      ],
+      "actual_more_matches": true,
+      "exact": true
+    },
+    {
+      "id": "exclude_museum",
+      "query": "杭州 不要博物馆",
+      "expected_start_lines": [
+        9,
+        11,
+        13
+      ],
+      "expected_more_matches": false,
+      "actual_start_lines": [],
+      "actual_more_matches": false,
+      "exact": false
+    },
+    {
+      "id": "unrecorded_price",
+      "query": "上海 票价",
+      "expected_start_lines": [],
+      "expected_more_matches": false,
+      "actual_start_lines": [],
+      "actual_more_matches": false,
+      "exact": true
+    },
+    {
+      "id": "library",
+      "query": "杭州 图书馆",
+      "expected_start_lines": [
+        9
+      ],
+      "expected_more_matches": false,
+      "actual_start_lines": [
+        9
+      ],
+      "actual_more_matches": false,
+      "exact": true
+    },
+    {
+      "id": "unrelated_driver",
+      "query": "Museum 驱动",
+      "expected_start_lines": [],
+      "expected_more_matches": false,
+      "actual_start_lines": [],
+      "actual_more_matches": false,
+      "exact": true
+    }
+  ]
+}

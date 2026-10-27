@@ -1,0 +1,103 @@
+{
+  "guide_sha256": "970568142720f0ee085057a1395450cf815fbb8f993e4b952b4f1df7d6c32f6f",
+  "cases": [
+    {
+      "expected_start_lines": [
+        3
+      ],
+      "query": "杭州 博物馆",
+      "expected_more_matches": false,
+      "id": "museum"
+    },
+    {
+      "expected_start_lines": [
+        7
+      ],
+      "query": "上海 雨天",
+      "expected_more_matches": false,
+      "id": "shanghai"
+    },
+    {
+      "expected_start_lines": [
+        3,
+        9,
+        11
+      ],
+      "query": "杭州 雨天",
+      "expected_more_matches": true,
+      "id": "top_three"
+    },
+    {
+      "expected_start_lines": [
+        5
+      ],
+      "query": "杭州 晴天",
+      "expected_more_matches": false,
+      "id": "sunny_walk"
+    },
+    {
+      "expected_start_lines": [],
+      "query": "火星",
+      "expected_more_matches": false,
+      "id": "unknown_destination"
+    },
+    {
+      "expected_start_lines": [
+        3
+      ],
+      "query": "MUSEUM",
+      "expected_more_matches": false,
+      "id": "case_insensitive"
+    },
+    {
+      "expected_start_lines": [
+        3,
+        9,
+        11
+      ],
+      "query": "杭州 下雨",
+      "expected_more_matches": true,
+      "id": "rain_paraphrase"
+    },
+    {
+      "expected_start_lines": [
+        3,
+        9,
+        11
+      ],
+      "query": "杭州 室内",
+      "expected_more_matches": true,
+      "id": "indoor"
+    },
+    {
+      "expected_start_lines": [
+        9,
+        11,
+        13
+      ],
+      "query": "杭州 不要博物馆",
+      "expected_more_matches": false,
+      "id": "exclude_museum"
+    },
+    {
+      "expected_start_lines": [],
+      "query": "上海 票价",
+      "expected_more_matches": false,
+      "id": "unrecorded_price"
+    },
+    {
+      "expected_start_lines": [
+        9
+      ],
+      "query": "杭州 图书馆",
+      "expected_more_matches": false,
+      "id": "library"
+    },
+    {
+      "expected_start_lines": [],
+      "query": "Museum 驱动",
+      "expected_more_matches": false,
+      "id": "unrelated_driver"
+    }
+  ]
+}
