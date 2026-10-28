@@ -24,3 +24,10 @@ $LASTEXITCODE
 该集合含英文大小写、AND匹配、多于三段、不同城市、无依据查询和两个意图探针。作者知道实现，不是盲测、真实用户样本或泛化准确率；也未覆盖模型选词、回答引用正确性、注入防护或资料时效。预期描述的是目标检索结果，故包含当前关键词契约外的语义需求。后续据此优化后它就成为调优回归集；应保留首次报告，并新增未参与调优的问题，不能改真值凑分。
 
 关联[Issue #80](https://github.com/dcr0coof/agent-platform/issues/80)，依赖PR #79。只完成评测切片，不关闭上传RAG及完整评测路线。
+
+## 2026-10-28：显式排除参数
+
+guide-eval用例可增加可选exclude字符串并原样传给生产工具，报告保留该值；策略标签为literal-and-exclude-source-order-v2。单独的exclusion-cases.json验证人工指定参数后的过滤行为，不改cases.json的原始问句或预期。新增案例是契约回归，不能与原12条自然语言题直接合并计算“理解准确率”；原来的否定句仍未被自动理解。
+
+复现新集合时将-suite改为./eval/travel-guide/exclusion-cases.json，-guide仍使用同一corpus.md。语料及旧用例hash不变，原始10月27日报告保留。
+实际运行结果：原集合10/12，0/3无依据误召回，退出1，逐题结果与原报告完全一致；新增结构化集合7/7，0/2无依据误召回，退出0。结果分别见 [原集合复测](../eval/travel-guide/report-2026-10-28-original.json) 与 [排除契约报告](../eval/travel-guide/report-2026-10-28-exclusions.json)。这是两种不同输入任务，不能宣称原自然语言失败已修复。

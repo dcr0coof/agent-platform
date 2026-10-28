@@ -20,6 +20,7 @@ import (
 type queryCase struct {
 	ID       string `json:"id"`
 	Query    string `json:"query"`
+	Exclude  string `json:"exclude,omitempty"`
 	Expected []int  `json:"expected_start_lines"`
 	More     bool   `json:"expected_more_matches"`
 }
@@ -84,9 +85,9 @@ func evaluate(guidePath, suitePath string) (report, error) {
 	if err != nil {
 		return report{}, err
 	}
-	r := report{Strategy: "literal-and-source-order-v1", GuideSHA: s.GuideSHA, SuiteSHA: fmt.Sprintf("%x", sha256.Sum256(data)), Total: len(s.Cases), Cases: make([]caseResult, 0, len(s.Cases))}
+	r := report{Strategy: "literal-and-exclude-source-order-v2", GuideSHA: s.GuideSHA, SuiteSHA: fmt.Sprintf("%x", sha256.Sum256(data)), Total: len(s.Cases), Cases: make([]caseResult, 0, len(s.Cases))}
 	for _, c := range s.Cases {
-		raw, err := g.Execute(context.Background(), map[string]interface{}{"query": c.Query})
+		raw, err := g.Execute(context.Background(), map[string]interface{}{"query": c.Query, "exclude": c.Exclude})
 		if err != nil {
 			return report{}, fmt.Errorf("case %s: %w", c.ID, err)
 		}
