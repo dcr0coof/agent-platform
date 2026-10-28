@@ -1,0 +1,118 @@
+{
+  "strategy": "literal-and-exclude-source-order-v2",
+  "guide_sha256": "970568142720f0ee085057a1395450cf815fbb8f993e4b952b4f1df7d6c32f6f",
+  "suite_sha256": "11ebf30c205b81438234af88ddbc150b65b7ac57dd81a244831e1ed2a790c59a",
+  "total": 7,
+  "exact": 7,
+  "no_evidence_cases": 2,
+  "no_evidence_false_positives": 0,
+  "cases": [
+    {
+      "id": "indoor_without_museum",
+      "query": "杭州 室内",
+      "exclude": "博物馆",
+      "expected_start_lines": [
+        9,
+        11,
+        13
+      ],
+      "expected_more_matches": false,
+      "actual_start_lines": [
+        9,
+        11,
+        13
+      ],
+      "actual_more_matches": false,
+      "exact": true
+    },
+    {
+      "id": "case_fold",
+      "query": "杭州 室内",
+      "exclude": "MUSEUM",
+      "expected_start_lines": [
+        9,
+        11,
+        13
+      ],
+      "expected_more_matches": false,
+      "actual_start_lines": [
+        9,
+        11,
+        13
+      ],
+      "actual_more_matches": false,
+      "exact": true
+    },
+    {
+      "id": "multiple_exclusions",
+      "query": "杭州 室内",
+      "exclude": "博物馆 展馆",
+      "expected_start_lines": [
+        9,
+        13
+      ],
+      "expected_more_matches": false,
+      "actual_start_lines": [
+        9,
+        13
+      ],
+      "actual_more_matches": false,
+      "exact": true
+    },
+    {
+      "id": "filter_before_limit",
+      "query": "杭州",
+      "exclude": "博物馆",
+      "expected_start_lines": [
+        5,
+        9,
+        11
+      ],
+      "expected_more_matches": true,
+      "actual_start_lines": [
+        5,
+        9,
+        11
+      ],
+      "actual_more_matches": true,
+      "exact": true
+    },
+    {
+      "id": "conflict_means_empty",
+      "query": "杭州 图书馆",
+      "exclude": "图书馆",
+      "expected_start_lines": [],
+      "expected_more_matches": false,
+      "actual_start_lines": [],
+      "actual_more_matches": false,
+      "exact": true
+    },
+    {
+      "id": "no_supported_destination",
+      "query": "火星",
+      "exclude": "博物馆",
+      "expected_start_lines": [],
+      "expected_more_matches": false,
+      "actual_start_lines": [],
+      "actual_more_matches": false,
+      "exact": true
+    },
+    {
+      "id": "empty_exclusion",
+      "query": "杭州 室内",
+      "expected_start_lines": [
+        3,
+        9,
+        11
+      ],
+      "expected_more_matches": true,
+      "actual_start_lines": [
+        3,
+        9,
+        11
+      ],
+      "actual_more_matches": true,
+      "exact": true
+    }
+  ]
+}

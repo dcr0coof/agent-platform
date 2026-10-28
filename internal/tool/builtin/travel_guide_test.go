@@ -7,9 +7,65 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 )
+
+func TestTravelGuideExplicitExclusions(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "guide.md")
+	if err := os.WriteFile(path, []byte("杭州 Museum\n\n杭州 图书馆\n\n杭州 展馆\n\n杭州 Museum\n\n杭州 剧场\n\n上海 图书馆"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	g, err := NewTravelGuide(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range []struct {
+		query, exclude string
+		lines          []int
+		more           bool
+	}{
+		{"杭州", "", []int{1, 3, 5}, true},
+		{"杭州", "  MuSeUm  ", []int{3, 5, 9}, false},
+		{"杭州", "图书馆", []int{1, 5, 7}, true},
+		{"杭州", "museum 展馆", []int{3, 9}, false},
+		{"杭州 图书馆", "museum", []int{3}, false},
+		{"杭州 图书馆", "图书馆", []int{}, false},
+		{"杭州", "杭州", []int{}, false},
+	} {
+		raw, err := g.Execute(context.Background(), map[string]interface{}{"query": tc.query, "exclude": tc.exclude})
+		if err != nil {
+			t.Fatal(err)
+		}
+		var got struct {
+			Matches []guidePassage
+			More    bool `json:"more_matches"`
+			Notice  string
+		}
+		if err := json.Unmarshal([]byte(raw), &got); err != nil {
+			t.Fatal(err)
+		}
+		lines := []int{}
+		for _, p := range got.Matches {
+			lines = append(lines, p.StartLine)
+		}
+		if !slices.Equal(lines, tc.lines) || got.More != tc.more || got.Matches == nil {
+			t.Fatalf("%+v: %s", tc, raw)
+		}
+		if tc.exclude != "" && !strings.Contains(got.Notice, strings.Fields(strings.ToLower(tc.exclude))[0]) {
+			t.Fatalf("filter missing from evidence: %s", raw)
+		}
+	}
+	for _, bad := range []any{nil, 1, []string{"museum"}, "a b c d e f g", strings.Repeat("中", 201), "\xff"} {
+		if _, err := g.Execute(context.Background(), map[string]interface{}{"query": "杭州", "exclude": bad}); err == nil {
+			t.Fatalf("accepted invalid exclude %v", bad)
+		}
+	}
+	if _, err := g.Execute(context.Background(), map[string]interface{}{"query": "杭州", "exclude": "museum", "path": "other"}); err == nil {
+		t.Fatal("accepted unknown key")
+	}
+}
 
 func TestTravelGuideEvidence(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "guide.md")

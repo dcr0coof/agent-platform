@@ -1,0 +1,73 @@
+{
+  "guide_sha256": "970568142720f0ee085057a1395450cf815fbb8f993e4b952b4f1df7d6c32f6f",
+  "cases": [
+    {
+      "exclude": "博物馆",
+      "query": "杭州 室内",
+      "expected_more_matches": false,
+      "id": "indoor_without_museum",
+      "expected_start_lines": [
+        9,
+        11,
+        13
+      ]
+    },
+    {
+      "exclude": "MUSEUM",
+      "query": "杭州 室内",
+      "expected_more_matches": false,
+      "id": "case_fold",
+      "expected_start_lines": [
+        9,
+        11,
+        13
+      ]
+    },
+    {
+      "exclude": "博物馆 展馆",
+      "query": "杭州 室内",
+      "expected_more_matches": false,
+      "id": "multiple_exclusions",
+      "expected_start_lines": [
+        9,
+        13
+      ]
+    },
+    {
+      "exclude": "博物馆",
+      "query": "杭州",
+      "expected_more_matches": true,
+      "id": "filter_before_limit",
+      "expected_start_lines": [
+        5,
+        9,
+        11
+      ]
+    },
+    {
+      "exclude": "图书馆",
+      "query": "杭州 图书馆",
+      "expected_more_matches": false,
+      "id": "conflict_means_empty",
+      "expected_start_lines": []
+    },
+    {
+      "exclude": "博物馆",
+      "query": "火星",
+      "expected_more_matches": false,
+      "id": "no_supported_destination",
+      "expected_start_lines": []
+    },
+    {
+      "exclude": "",
+      "query": "杭州 室内",
+      "expected_more_matches": true,
+      "id": "empty_exclusion",
+      "expected_start_lines": [
+        3,
+        9,
+        11
+      ]
+    }
+  ]
+}
