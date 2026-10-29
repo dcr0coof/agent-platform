@@ -80,3 +80,31 @@ func TestEvaluationReportsQualityAndRejectsInvalidRuns(t *testing.T) {
 }
 
 func fmtHash(data []byte) string { hash := sha256.Sum256(data); return fmt.Sprintf("%x", hash) }
+
+func TestExplicitExclusionTypes(t *testing.T) {
+	dir := t.TempDir()
+	guide, cases := filepath.Join(dir, "guide.md"), filepath.Join(dir, "cases.json")
+	corpus := []byte("杭州 博物馆")
+	if err := os.WriteFile(guide, corpus, 0600); err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range []struct {
+		field string
+		code  int
+	}{
+		{``, 1}, {`,"exclude":""`, 1}, {`,"exclude":"博物馆"`, 0},
+		{`,"exclude":null`, 2}, {`,"exclude":false`, 2}, {`,"exclude":[]`, 2},
+	} {
+		data := fmt.Sprintf(`{"guide_sha256":%q,"cases":[{"id":"x","query":"杭州","expected_start_lines":[],"expected_more_matches":false%s}]}`, fmtHash(corpus), tc.field)
+		if err := os.WriteFile(cases, []byte(data), 0600); err != nil {
+			t.Fatal(err)
+		}
+		var out, errors bytes.Buffer
+		if code := run([]string{"-guide", guide, "-suite", cases}, &out, &errors); code != tc.code {
+			t.Fatalf("%s: exit %d: %s", tc.field, code, errors.String())
+		}
+		if tc.code == 2 && (out.Len() != 0 || errors.Len() == 0) {
+			t.Fatal("invalid constraint emitted report")
+		}
+	}
+}

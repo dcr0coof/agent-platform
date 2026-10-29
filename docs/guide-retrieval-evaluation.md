@@ -31,3 +31,5 @@ guide-eval用例可增加可选exclude字符串并原样传给生产工具，报
 
 复现新集合时将-suite改为./eval/travel-guide/exclusion-cases.json，-guide仍使用同一corpus.md。语料及旧用例hash不变，原始10月27日报告保留。
 实际运行结果：原集合10/12，0/3无依据误召回，退出1，逐题结果与原报告完全一致；新增结构化集合7/7，0/2无依据误召回，退出0。结果分别见 [原集合复测](../eval/travel-guide/report-2026-10-28-original.json) 与 [排除契约报告](../eval/travel-guide/report-2026-10-28-exclusions.json)。这是两种不同输入任务，不能宣称原自然语言失败已修复。
+
+2026-10-29：exclude显式为null、数组、布尔或数字时拒绝评分，退出2且无质量报告；省略或空字符串仍表示不排除。不能用JSON null静默删除评测约束。Issue #84，不改变生产检索算法及历史质量结果。
