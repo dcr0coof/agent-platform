@@ -25,7 +25,7 @@ const evidence = computed<Evidence | null>(() => {
       <p><strong>资料：{{ evidence.source }}</strong></p>
       <p class="guide-version">文件版本 SHA-256：{{ evidence.sha256 }}</p>
       <p>{{ evidence.notice }}</p>
-      <p v-if="!evidence.matches.length">本次关键词没有命中段落，不能作为回答依据；不代表现实中不存在相关信息。</p>
+      <p v-if="!evidence.matches.length">本次查询条件下没有可用段落，不能作为回答依据；不代表现实中不存在相关信息。</p>
       <section v-for="(passage, i) in evidence.matches" :key="i" class="guide-passage">
         <p>原文第 {{ passage.start_line }}–{{ passage.end_line }} 行</p>
         <pre>{{ passage.text }}</pre>
