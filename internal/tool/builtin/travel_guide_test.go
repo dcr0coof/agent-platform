@@ -22,26 +22,31 @@ func TestTravelGuideExplicitExclusions(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, tc := range []struct {
-		query, exclude string
-		lines          []int
-		more           bool
+		query, exclude            string
+		lines                     []int
+		more                      bool
+		queryCount, excludedCount int
 	}{
-		{"杭州", "", []int{1, 3, 5}, true},
-		{"杭州", "  MuSeUm  ", []int{3, 5, 9}, false},
-		{"杭州", "图书馆", []int{1, 5, 7}, true},
-		{"杭州", "museum 展馆", []int{3, 9}, false},
-		{"杭州 图书馆", "museum", []int{3}, false},
-		{"杭州 图书馆", "图书馆", []int{}, false},
-		{"杭州", "杭州", []int{}, false},
+		{"杭州", "", []int{1, 3, 5}, true, 5, 0},
+		{"杭州", "  MuSeUm  ", []int{3, 5, 9}, false, 5, 2},
+		{"杭州", "图书馆", []int{1, 5, 7}, true, 5, 1},
+		{"杭州", "museum 展馆", []int{3, 9}, false, 5, 3},
+		{"杭州 图书馆", "museum", []int{3}, false, 1, 0},
+		{"杭州 图书馆", "图书馆", []int{}, false, 1, 1},
+		{"杭州", "杭州 museum", []int{}, false, 5, 5},
+		{"北京", "museum", []int{}, false, 0, 0},
+		{"杭州", "剧场", []int{1, 3, 5}, true, 5, 1},
 	} {
 		raw, err := g.Execute(context.Background(), map[string]interface{}{"query": tc.query, "exclude": tc.exclude})
 		if err != nil {
 			t.Fatal(err)
 		}
 		var got struct {
-			Matches []guidePassage
-			More    bool `json:"more_matches"`
-			Notice  string
+			Matches       []guidePassage
+			More          bool `json:"more_matches"`
+			Notice        string
+			QueryCount    int `json:"query_matches"`
+			ExcludedCount int `json:"excluded_matches"`
 		}
 		if err := json.Unmarshal([]byte(raw), &got); err != nil {
 			t.Fatal(err)
@@ -52,6 +57,22 @@ func TestTravelGuideExplicitExclusions(t *testing.T) {
 		}
 		if !slices.Equal(lines, tc.lines) || got.More != tc.more || got.Matches == nil {
 			t.Fatalf("%+v: %s", tc, raw)
+		}
+		if got.QueryCount != tc.queryCount || got.ExcludedCount != tc.excludedCount {
+			t.Fatalf("incorrect full-snapshot counts: %+v: %s", tc, raw)
+		}
+		if tc.queryCount == 0 && !strings.Contains(got.Notice, "关键词没有命中") {
+			t.Fatalf("missing keyword recovery: %s", raw)
+		}
+		if tc.queryCount > 0 && tc.queryCount == tc.excludedCount && !strings.Contains(got.Notice, "未自动放宽条件") {
+			t.Fatalf("missing exclusion recovery: %s", raw)
+		}
+		for _, p := range got.Matches {
+			for _, term := range strings.Fields(strings.ToLower(tc.exclude)) {
+				if strings.Contains(strings.ToLower(p.Text), term) {
+					t.Fatalf("excluded passage disclosed: %s", raw)
+				}
+			}
 		}
 		if tc.exclude != "" && !strings.Contains(got.Notice, strings.Fields(strings.ToLower(tc.exclude))[0]) {
 			t.Fatalf("filter missing from evidence: %s", raw)

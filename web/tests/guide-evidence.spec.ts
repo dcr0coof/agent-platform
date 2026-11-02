@@ -82,11 +82,39 @@ test("no hit and invalid guide results never invent citations", async ({ page })
   await page.reload();
   const card = page.locator(".guide-evidence");
   await card.locator("summary").click();
-  await expect(card).toContainText("本次关键词没有命中段落");
+  await expect(card).toContainText("本次查询条件下没有可用段落");
   await expect(card.locator(".guide-passage")).toHaveCount(0);
   await expect(card.locator("pre")).toHaveText(invalid);
   await expect(card.locator("b")).toHaveCount(0);
   await expect(card.locator(".guide-version")).toHaveCount(1);
   const record = await downloadText(page);
   for (const raw of [JSON.stringify(valid), ...invalid]) expect(record).toContain(raw);
+});
+
+test("fully filtered evidence explains the constraint and survives export", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.locator(".trip-item")).toHaveCount(1);
+  const sessions = await (await page.request.get("/api/sessions")).json();
+  const id = sessions[0].id;
+  const session = await (await page.request.get(`/api/sessions/${id}`)).json();
+  const evidence = {
+    source: "guide.md", sha256: "c".repeat(64), matches: [], more_matches: false,
+    query_matches: 5, excluded_matches: 5,
+    notice: "关键词命中 5 段，排除 5 段，剩余 0 段。命中段落均被排除条件过滤；未自动放宽条件，请补充其他资料或由用户明确调整条件。",
+  };
+  session.messages = [
+    { role: "user", content: "杭州，排除博物馆" },
+    { role: "assistant", content: "", tool_calls: [{ id: "filtered", type: "function", function: { name: "search_travel_guide", arguments: '{"query":"杭州","exclude":"博物馆"}' } }] },
+    { role: "tool", tool_call_id: "filtered", content: JSON.stringify(evidence) },
+    { role: "assistant", content: "需要其他资料。" },
+  ];
+  await page.route(`**/api/sessions/${id}`, route => route.fulfill({ json: session }));
+  await page.reload();
+  const card = page.locator(".guide-evidence");
+  await card.locator("summary").click();
+  await expect(card).toContainText(evidence.notice);
+  await expect(card).toContainText("本次查询条件下没有可用段落");
+  await expect(card).not.toContainText("关键词没有命中");
+  await expect(card.locator(".guide-passage")).toHaveCount(0);
+  expect(await downloadText(page)).toContain(JSON.stringify(evidence));
 });
