@@ -18,7 +18,7 @@ func TestEvaluationReportsQualityAndRejectsInvalidRuns(t *testing.T) {
 	if err := os.WriteFile(guide, corpus, 0600); err != nil {
 		t.Fatal(err)
 	}
-	valid := suite{GuideSHA: fmtHash(corpus), Cases: []queryCase{{ID: "hangzhou", Query: "杭州", Expected: []int{1}}}}
+	valid := suite{GuideSHA: fmtHash(corpus), Cases: []queryCase{{ID: "hangzhou", Query: "杭州", Expected: []int{1}, More: new(bool)}}}
 	for _, tc := range []struct {
 		name   string
 		modify func(*suite)
@@ -105,6 +105,34 @@ func TestExplicitExclusionTypes(t *testing.T) {
 		}
 		if tc.code == 2 && (out.Len() != 0 || errors.Len() == 0) {
 			t.Fatal("invalid constraint emitted report")
+		}
+	}
+}
+
+func TestMoreExpectationMustBeExplicit(t *testing.T) {
+	dir := t.TempDir()
+	guide, cases := filepath.Join(dir, "guide.md"), filepath.Join(dir, "cases.json")
+	corpus := []byte("杭州一\n\n杭州二\n\n杭州三\n\n杭州四")
+	if err := os.WriteFile(guide, corpus, 0600); err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range []struct {
+		field string
+		code  int
+	}{
+		{``, 2}, {`,"expected_more_matches":null`, 2}, {`,"expected_more_matches":"false"`, 2},
+		{`,"expected_more_matches":false`, 1}, {`,"expected_more_matches":true`, 0},
+	} {
+		data := fmt.Sprintf(`{"guide_sha256":%q,"cases":[{"id":"x","query":"杭州","expected_start_lines":[1,3,5]%s}]}`, fmtHash(corpus), tc.field)
+		if err := os.WriteFile(cases, []byte(data), 0600); err != nil {
+			t.Fatal(err)
+		}
+		var out, errors bytes.Buffer
+		if code := run([]string{"-guide", guide, "-suite", cases}, &out, &errors); code != tc.code {
+			t.Fatalf("%s: %d %s", tc.field, code, &errors)
+		}
+		if tc.code == 2 && (out.Len() != 0 || errors.Len() == 0) {
+			t.Fatal("invalid expectation emitted score")
 		}
 	}
 }
