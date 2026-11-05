@@ -37,7 +37,7 @@ type queryCase struct {
 	Query    string    `json:"query"`
 	Exclude  exclusion `json:"exclude,omitempty"`
 	Expected []int     `json:"expected_start_lines"`
-	More     bool      `json:"expected_more_matches"`
+	More     *bool     `json:"expected_more_matches"`
 }
 type suite struct {
 	GuideSHA string      `json:"guide_sha256"`
@@ -84,7 +84,10 @@ func evaluate(guidePath, suitePath string) (report, error) {
 	}
 	ids := map[string]bool{}
 	for _, c := range s.Cases {
-		if strings.TrimSpace(c.ID) == "" || ids[c.ID] || c.Expected == nil || len(c.Expected) > 3 || (c.More && len(c.Expected) != 3) {
+		if c.More == nil {
+			return report{}, fmt.Errorf("expected_more_matches must be explicitly true or false")
+		}
+		if strings.TrimSpace(c.ID) == "" || ids[c.ID] || c.Expected == nil || len(c.Expected) > 3 || (*c.More && len(c.Expected) != 3) {
 			return report{}, fmt.Errorf("case IDs must be unique/nonblank; expected lines must be an array of up to three lines")
 		}
 		ids[c.ID] = true
@@ -123,7 +126,7 @@ func evaluate(guidePath, suitePath string) (report, error) {
 		for _, m := range result.Matches {
 			actual = append(actual, m.Start)
 		}
-		exact := slices.Equal(actual, c.Expected) && result.More == c.More
+		exact := slices.Equal(actual, c.Expected) && result.More == *c.More
 		if exact {
 			r.Exact++
 		}
