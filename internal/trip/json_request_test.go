@@ -3,6 +3,7 @@ package trip
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -41,6 +42,56 @@ func TestAmbiguousRequestsDoNotMutateSessions(t *testing.T) {
 	h.request("PUT", "/api/sessions/"+s.ID, sessionInput{Title: "valid", Revision: s.Revision, Constraints: Constraints{Budget: 20}}, 200, &s)
 	if s.Title != "valid" || s.Constraints.Budget != 20 {
 		t.Fatal("valid update did not recover")
+	}
+}
+
+func TestMalformedUTF8DoesNotMutate(t *testing.T) {
+	h := setup(t, DemoRunner{Delay: time.Millisecond})
+	s := h.newSession()
+	for _, bad := range []string{"\xff", "\xc0\xaf", "\xe4\xb8", "\xed\xa0\x80"} {
+		for _, tc := range []struct{ method, path, body string }{
+			{"POST", "/api/sessions", `{"title":"` + bad + `"}`},
+			{"PUT", "/api/sessions/" + s.ID, fmt.Sprintf(`{"revision":%d,"constraints":{"destination":"%s"}}`, s.Revision, bad)},
+			{"POST", "/api/sessions/" + s.ID + "/runs", fmt.Sprintf(`{"revision":%d,"message":"%s","request_id":"utf8-key"}`, s.Revision, bad)},
+		} {
+			req, err := http.NewRequest(tc.method, h.server.URL+tc.path, strings.NewReader(tc.body))
+			if err != nil {
+				t.Fatal(err)
+			}
+			req.Header.Set("Content-Type", "application/json")
+			resp, err := h.client.Do(req)
+			if err != nil {
+				t.Fatal(err)
+			}
+			raw, err := io.ReadAll(resp.Body)
+			resp.Body.Close()
+			if err != nil {
+				t.Fatal(err)
+			}
+			if resp.StatusCode != 400 || !strings.Contains(string(raw), "UTF-8") {
+				t.Fatalf("%s %s: status=%d body=%s", tc.method, tc.path, resp.StatusCode, raw)
+			}
+		}
+	}
+	var got Session
+	h.request("GET", "/api/sessions/"+s.ID, nil, 200, &got)
+	if got.Revision != s.Revision || got.Constraints != s.Constraints || got.Title != s.Title || got.LatestRun != nil || len(got.Messages) != 0 {
+		t.Fatalf("malformed UTF-8 changed state: %+v", got)
+	}
+	var list []Session
+	h.request("GET", "/api/sessions", nil, 200, &list)
+	if len(list) != 1 {
+		t.Fatal("malformed UTF-8 create persisted a session")
+	}
+	const valid = "杭州 🌦 �"
+	h.request("PUT", "/api/sessions/"+s.ID, sessionInput{Title: valid, Revision: s.Revision}, 200, &got)
+	if got.Title != valid {
+		t.Fatalf("valid Unicode changed: %q", got.Title)
+	}
+	var run Run
+	h.request("POST", "/api/sessions/"+s.ID+"/runs", startBody(valid, "utf8-key", got.Revision), 202, &run)
+	if result := h.wait(run.ID); result.Status != "completed" {
+		t.Fatalf("valid run failed: %+v", result)
 	}
 }
 
