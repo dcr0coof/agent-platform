@@ -19,6 +19,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode/utf8"
 )
 
 type HTTP struct {
@@ -135,6 +136,10 @@ func readJSON(w http.ResponseWriter, r *http.Request, v interface{}) bool {
 	data, err := io.ReadAll(r.Body)
 	if err != nil {
 		problem(w, 400, "请求格式错误或超过 32 KiB")
+		return false
+	}
+	if !utf8.Valid(data) {
+		problem(w, 400, "请求文字必须使用有效的 UTF-8 编码，请检查后重新提交")
 		return false
 	}
 	if trimmed := bytes.TrimSpace(data); len(trimmed) == 0 || trimmed[0] != '{' {
