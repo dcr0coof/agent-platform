@@ -88,6 +88,35 @@ func TestTravelGuideExplicitExclusions(t *testing.T) {
 	}
 }
 
+func TestGuideResultCarriesEffectiveFilters(t *testing.T) {
+	g := &TravelGuide{source: "demo.md", passages: []guidePassage{{1, 1, "杭州 Museum"}, {3, 3, "杭州 park"}}}
+	for _, tc := range []struct {
+		params         map[string]interface{}
+		query, exclude []string
+		count          int
+	}{
+		{map[string]interface{}{"query": "  杭州\tMUSEUM "}, []string{"杭州", "museum"}, []string{}, 1},
+		{map[string]interface{}{"query": "杭州", "exclude": "\u3000MuSeUm\n"}, []string{"杭州"}, []string{"museum"}, 1},
+		{map[string]interface{}{"query": "杭州", "exclude": " \t"}, []string{"杭州"}, []string{}, 2},
+	} {
+		raw, err := g.Execute(context.Background(), tc.params)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var got struct {
+			Query   []string       `json:"query_terms"`
+			Exclude []string       `json:"excluded_terms"`
+			Matches []guidePassage `json:"matches"`
+		}
+		if err := json.Unmarshal([]byte(raw), &got); err != nil {
+			t.Fatal(err)
+		}
+		if got.Query == nil || got.Exclude == nil || !slices.Equal(got.Query, tc.query) || !slices.Equal(got.Exclude, tc.exclude) || len(got.Matches) != tc.count {
+			t.Fatalf("filters do not describe evidence: %s", raw)
+		}
+	}
+}
+
 func TestTravelGuideEvidence(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "guide.md")
 	raw := "\ufeff# 自制攻略\r\n\r\n杭州 雨天 Museum\r\n先核对预约。\r\n\r\n杭州 公园\r\n"
