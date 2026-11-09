@@ -88,7 +88,7 @@ func (g *TravelGuide) Execute(ctx context.Context, params map[string]interface{}
 			return "", fmt.Errorf("只接受 query 和可选 exclude 参数")
 		}
 	}
-	var excluded []string
+	excluded := []string{}
 	if raw, present := params["exclude"]; present {
 		exclude, valid := raw.(string)
 		excluded = strings.Fields(strings.ToLower(exclude))
@@ -142,6 +142,8 @@ func (g *TravelGuide) Execute(ctx context.Context, params map[string]interface{}
 		notice += " 命中段落均被排除条件过滤；未自动放宽条件，请补充其他资料或由用户明确调整条件。"
 	}
 	result := struct {
+		QueryTerms      []string       `json:"query_terms"`
+		ExcludedTerms   []string       `json:"excluded_terms"`
 		Source          string         `json:"source"`
 		SHA256          string         `json:"sha256"`
 		Notice          string         `json:"notice"`
@@ -149,7 +151,7 @@ func (g *TravelGuide) Execute(ctx context.Context, params map[string]interface{}
 		More            bool           `json:"more_matches"`
 		QueryMatches    int            `json:"query_matches"`
 		ExcludedMatches int            `json:"excluded_matches"`
-	}{g.source, g.version, notice, matches, more, queryMatches, excludedMatches}
+	}{terms, excluded, g.source, g.version, notice, matches, more, queryMatches, excludedMatches}
 	data, err := json.Marshal(result)
 	return string(data), err
 }
