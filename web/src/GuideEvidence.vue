@@ -3,7 +3,7 @@ import { computed } from "vue";
 
 const props = defineProps<{ raw: string }>();
 type Passage = { start_line: number; end_line: number; text: string };
-type Evidence = { source: string; sha256: string; notice: string; matches: Passage[]; more_matches: boolean };
+type Evidence = { source: string; sha256: string; notice: string; matches: Passage[]; more_matches: boolean; query_terms?: unknown; excluded_terms?: unknown };
 const evidence = computed<Evidence | null>(() => {
   try {
     const value = JSON.parse(props.raw);
@@ -17,6 +17,15 @@ const evidence = computed<Evidence | null>(() => {
     return value;
   } catch { return null; }
 });
+const filters = computed(() => {
+  const query = evidence.value?.query_terms;
+  const excluded = evidence.value?.excluded_terms;
+  const valid = (terms: unknown): terms is string[] =>
+    Array.isArray(terms) && terms.length <= 6 &&
+    terms.every(term => typeof term === "string" && term.trim().length > 0);
+  if (!valid(query) || query.length === 0 || !valid(excluded)) return null;
+  return { query, excluded };
+});
 </script>
 
 <template>
@@ -24,6 +33,13 @@ const evidence = computed<Evidence | null>(() => {
     <template v-if="evidence">
       <p><strong>资料：{{ evidence.source }}</strong></p>
       <p class="guide-version">文件版本 SHA-256：{{ evidence.sha256 }}</p>
+      <div class="guide-filters">
+        <template v-if="filters">
+          <p>实际检索词（全部匹配）：{{ JSON.stringify(filters.query) }}</p>
+          <p>实际排除词（任一命中即排除整段）：{{ filters.excluded.length ? JSON.stringify(filters.excluded) : "未启用排除" }}</p>
+        </template>
+        <p v-else>实际筛选词未知：此记录未提供完整有效的筛选词，不等于未启用排除。</p>
+      </div>
       <p>{{ evidence.notice }}</p>
       <p v-if="!evidence.matches.length">本次查询条件下没有可用段落，不能作为回答依据；不代表现实中不存在相关信息。</p>
       <section v-for="(passage, i) in evidence.matches" :key="i" class="guide-passage">

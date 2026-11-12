@@ -99,7 +99,7 @@ test("fully filtered evidence explains the constraint and survives export", asyn
   const session = await (await page.request.get(`/api/sessions/${id}`)).json();
   const evidence = {
     source: "guide.md", sha256: "c".repeat(64), matches: [], more_matches: false,
-    query_matches: 5, excluded_matches: 5,
+    query_matches: 5, excluded_matches: 5, query_terms: ["杭州"], excluded_terms: ["博物馆"],
     notice: "关键词命中 5 段，排除 5 段，剩余 0 段。命中段落均被排除条件过滤；未自动放宽条件，请补充其他资料或由用户明确调整条件。",
   };
   session.messages = [
@@ -113,8 +113,48 @@ test("fully filtered evidence explains the constraint and survives export", asyn
   const card = page.locator(".guide-evidence");
   await card.locator("summary").click();
   await expect(card).toContainText(evidence.notice);
+  await expect(card.locator(".guide-filters")).toContainText('实际检索词（全部匹配）：["杭州"]');
+  await expect(card.locator(".guide-filters")).toContainText('实际排除词（任一命中即排除整段）：["博物馆"]');
   await expect(card).toContainText("本次查询条件下没有可用段落");
   await expect(card).not.toContainText("关键词没有命中");
   await expect(card.locator(".guide-passage")).toHaveCount(0);
   expect(await downloadText(page)).toContain(JSON.stringify(evidence));
+});
+
+test("effective filter metadata is escaped and legacy or invalid metadata stays unknown", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.locator(".trip-item")).toHaveCount(1);
+  const [{ id }] = await (await page.request.get("/api/sessions")).json();
+  const session = await (await page.request.get(`/api/sessions/${id}`)).json();
+  const base = { source: "guide.md", sha256: "d".repeat(64), notice: "静态资料", matches: [], more_matches: false };
+  const variants = [
+    { query_terms: ["<img src=x onerror=window.injected=true>", "杭州"], excluded_terms: [] },
+    {},
+    { query_terms: ["杭州"] },
+    { query_terms: [], excluded_terms: [] },
+    { query_terms: ["杭州"], excluded_terms: null },
+    { query_terms: ["杭州"], excluded_terms: [42] },
+    { query_terms: ["杭州"], excluded_terms: ["　"] },
+    { query_terms: Array(7).fill("杭州"), excluded_terms: [] },
+  ];
+  session.messages = [
+    { role: "user", content: "核对筛选条件" },
+    { role: "assistant", content: "", tool_calls: variants.map((_, i) => ({ id: `f${i}`, type: "function", function: { name: "search_travel_guide", arguments: '{"query":"不能从参数推断"}' } })) },
+    ...variants.map((v, i) => ({ role: "tool", tool_call_id: `f${i}`, content: JSON.stringify({ ...base, ...v }) })),
+    { role: "assistant", content: "核对完成" },
+  ];
+  await page.route(`**/api/sessions/${id}`, route => route.fulfill({ json: session }));
+  await page.reload();
+  const card = page.locator(".guide-evidence");
+  await card.locator("summary").click();
+  const filters = card.locator(".guide-filters");
+  await expect(filters).toHaveCount(variants.length);
+  await expect(filters.first()).toContainText(JSON.stringify(variants[0].query_terms));
+  await expect(filters.first()).toContainText("未启用排除");
+  for (let i = 1; i < variants.length; i++) await expect(filters.nth(i)).toContainText("实际筛选词未知");
+  await expect(card.locator(".guide-version")).toHaveCount(variants.length);
+  await expect(card).not.toContainText("不能从参数推断");
+  await expect(card.locator("img, script")).toHaveCount(0);
+  expect(await page.evaluate(() => (window as any).injected)).toBeUndefined();
+  expect(await downloadText(page)).toContain(JSON.stringify({ ...base, ...variants[0] }));
 });
