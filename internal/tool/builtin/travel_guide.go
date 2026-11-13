@@ -79,6 +79,9 @@ func (*TravelGuide) Parameters() map[string]interface{} {
 
 func (g *TravelGuide) Execute(ctx context.Context, params map[string]interface{}) (string, error) {
 	query, ok := params["query"].(string)
+	if strings.ContainsRune(query, 0) {
+		return "", fmt.Errorf("query 不能包含 NUL 字符，请检查关键词后重试")
+	}
 	terms := strings.Fields(strings.ToLower(query))
 	if !ok || !utf8.ValidString(query) || utf8.RuneCountInString(query) > 200 || len(terms) == 0 || len(terms) > 6 {
 		return "", fmt.Errorf("query 必须是 1–6 个空格分隔的关键词且最多 200 字符")
@@ -91,6 +94,9 @@ func (g *TravelGuide) Execute(ctx context.Context, params map[string]interface{}
 	excluded := []string{}
 	if raw, present := params["exclude"]; present {
 		exclude, valid := raw.(string)
+		if strings.ContainsRune(exclude, 0) {
+			return "", fmt.Errorf("exclude 不能包含 NUL 字符，请检查排除词后重试")
+		}
 		excluded = strings.Fields(strings.ToLower(exclude))
 		if !valid || !utf8.ValidString(exclude) || utf8.RuneCountInString(exclude) > 200 || len(excluded) > 6 {
 			return "", fmt.Errorf("exclude 必须是最多6个空格分隔关键词的字符串且最多200字符，可为空")
