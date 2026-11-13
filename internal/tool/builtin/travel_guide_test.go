@@ -193,3 +193,28 @@ func TestTravelGuideBounds(t *testing.T) {
 		t.Fatalf("bound: %s %v", result, err)
 	}
 }
+
+func TestGuideRejectsNULConstraintsWithoutRelaxing(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "guide.md")
+	if err := os.WriteFile(path, []byte("杭州 博物馆\n\n杭州 公园"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	g, err := NewTravelGuide(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, field := range []string{"query", "exclude"} {
+		for _, value := range []string{"\x00", "\x00博物馆", "博物\x00馆", "博物馆\x00"} {
+			params := map[string]interface{}{"query": "杭州", "exclude": "博物馆"}
+			params[field] = value
+			result, err := g.Execute(context.Background(), params)
+			if err == nil || result != "" || !strings.Contains(err.Error(), field) || !strings.Contains(err.Error(), "NUL") {
+				t.Fatalf("field %s: result=%q err=%v", field, result, err)
+			}
+		}
+	}
+	result, err := g.Execute(context.Background(), map[string]interface{}{"query": "杭州", "exclude": "博物馆"})
+	if err != nil || !strings.Contains(result, "杭州 公园") || strings.Contains(result, "\"text\":\"杭州 博物馆\"") {
+		t.Fatalf("recovery: %s %v", result, err)
+	}
+}
