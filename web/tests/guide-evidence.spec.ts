@@ -119,6 +119,30 @@ test("fully filtered evidence explains the constraint and survives export", asyn
   await expect(card).not.toContainText("关键词没有命中");
   await expect(card.locator(".guide-passage")).toHaveCount(0);
   expect(await downloadText(page)).toContain(JSON.stringify(evidence));
+  await expect(card.locator(".guide-coverage")).toContainText("筛选后共 0 段，本次展示 0 段，未展示 0 段");
+});
+
+test("coverage distinguishes truncation and rejects contradictory statistics", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.locator(".trip-item")).toHaveCount(1);
+  const [{ id }] = await (await page.request.get("/api/sessions")).json();
+  const session = await (await page.request.get(`/api/sessions/${id}`)).json();
+  const base = { source: "guide.md", sha256: "e".repeat(64), notice: "静态资料", matches: [1, 3, 5].map(n => ({ start_line: n, end_line: n, text: "杭州" })), more_matches: true };
+  const stats = [{ query_matches: 8, excluded_matches: 2 }, {}, { query_matches: 2, excluded_matches: 0 }, { query_matches: 6, excluded_matches: -1 }, { query_matches: 3, excluded_matches: 0 }, { query_matches: 4.5, excluded_matches: 0 }, { query_matches: 1, excluded_matches: 2 }];
+  session.messages = [
+    { role: "user", content: "核对段落覆盖范围" },
+    { role: "assistant", content: "", tool_calls: stats.map((_, i) => ({ id: `c${i}`, type: "function", function: { name: "search_travel_guide", arguments: "{}" } })) },
+    ...stats.map((s, i) => ({ role: "tool", tool_call_id: `c${i}`, content: JSON.stringify({ ...base, ...s }) })),
+    { role: "assistant", content: "资料" },
+  ];
+  await page.route(`**/api/sessions/${id}`, route => route.fulfill({ json: session }));
+  await page.reload();
+  const card = page.locator(".guide-evidence");
+  await card.locator("summary").click();
+  const coverage = card.locator(".guide-coverage");
+  await expect(coverage.first()).toContainText("筛选后共 6 段，本次展示 3 段，未展示 3 段");
+  for (let i = 1; i < stats.length; i++) await expect(coverage.nth(i)).toContainText("段落覆盖数量未知");
+  await expect(card.locator(".guide-passage")).toHaveCount(stats.length * 3);
 });
 
 test("effective filter metadata is escaped and legacy or invalid metadata stays unknown", async ({ page }) => {
