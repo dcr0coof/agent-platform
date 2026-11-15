@@ -81,6 +81,34 @@ func TestEvaluationReportsQualityAndRejectsInvalidRuns(t *testing.T) {
 
 func fmtHash(data []byte) string { hash := sha256.Sum256(data); return fmt.Sprintf("%x", hash) }
 
+func TestSuiteUTF8Validation(t *testing.T) {
+	dir := t.TempDir()
+	guide, cases := filepath.Join(dir, "guide.md"), filepath.Join(dir, "cases.json")
+	corpus := []byte("杭州 �")
+	if err := os.WriteFile(guide, corpus, 0600); err != nil {
+		t.Fatal(err)
+	}
+	valid, err := json.Marshal(suite{GuideSHA: fmtHash(corpus), Cases: []queryCase{{ID: "unicode", Query: "�", Expected: []int{1}, More: new(bool)}}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, raw := range [][]byte{{0xff}, {0xc0, 0xaf}, {0xed, 0xa0, 0x80}, {0xe4, 0xb8}, []byte("�")} {
+		data := bytes.Replace(valid, []byte("�"), raw, 1)
+		if err := os.WriteFile(cases, data, 0600); err != nil {
+			t.Fatal(err)
+		}
+		var out, errors bytes.Buffer
+		code := run([]string{"-guide", guide, "-suite", cases}, &out, &errors)
+		if bytes.Equal(raw, []byte("�")) {
+			if code != 0 || out.Len() == 0 {
+				t.Fatalf("valid Unicode rejected: %d %s", code, &errors)
+			}
+		} else if code != 2 || out.Len() != 0 || !strings.Contains(errors.String(), "UTF-8") {
+			t.Fatalf("damaged suite scored: %d %s %s", code, &out, &errors)
+		}
+	}
+}
+
 func TestExplicitExclusionTypes(t *testing.T) {
 	dir := t.TempDir()
 	guide, cases := filepath.Join(dir, "guide.md"), filepath.Join(dir, "cases.json")
