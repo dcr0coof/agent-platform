@@ -13,6 +13,7 @@ import (
 	"regexp"
 	"slices"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/dcr0coof/agent-platform/internal/tool/builtin"
 )
@@ -71,6 +72,9 @@ func evaluate(guidePath, suitePath string) (report, error) {
 		return report{}, fmt.Errorf("suite exceeds 256 KiB or cannot be read")
 	}
 	var s suite
+	if !utf8.Valid(data) {
+		return report{}, fmt.Errorf("suite must contain valid UTF-8; repair the source file before scoring")
+	}
 	d := json.NewDecoder(bytes.NewReader(data))
 	d.DisallowUnknownFields()
 	if err := d.Decode(&s); err != nil {
