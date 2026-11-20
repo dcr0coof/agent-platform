@@ -1,22 +1,9 @@
 <script setup lang="ts">
 import { computed } from "vue";
+import { parseGuideEvidence } from "./guide-evidence";
 
 const props = defineProps<{ raw: string }>();
-type Passage = { start_line: number; end_line: number; text: string };
-type Evidence = { source: string; sha256: string; notice: string; matches: Passage[]; more_matches: boolean; query_terms?: unknown; excluded_terms?: unknown; query_matches?: unknown; excluded_matches?: unknown };
-const evidence = computed<Evidence | null>(() => {
-  try {
-    const value = JSON.parse(props.raw);
-    if (!value || typeof value.source !== "string" || !value.source.trim() ||
-      typeof value.sha256 !== "string" || !/^[a-f0-9]{64}$/.test(value.sha256) ||
-      typeof value.notice !== "string" || typeof value.more_matches !== "boolean" ||
-      !Array.isArray(value.matches) || value.matches.length > 3 ||
-      value.matches.some((p: Passage) => !p || !Number.isSafeInteger(p.start_line) ||
-        !Number.isSafeInteger(p.end_line) || p.start_line < 1 || p.end_line < p.start_line ||
-        typeof p.text !== "string" || !p.text.trim())) return null;
-    return value;
-  } catch { return null; }
-});
+const evidence = computed(() => parseGuideEvidence(props.raw));
 const filters = computed(() => {
   const query = evidence.value?.query_terms;
   const excluded = evidence.value?.excluded_terms;

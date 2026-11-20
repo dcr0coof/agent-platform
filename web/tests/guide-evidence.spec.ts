@@ -55,6 +55,10 @@ test("guide citations are paired, escaped, restored and separate from weather", 
   await page.setViewportSize({ width: 1440, height: 1000 });
   const record = await downloadText(page);
   expect(record).toContain(JSON.stringify(evidence));
+  expect(record).toContain(`资料：${evidence.source}`);
+  expect(record).toContain(`文件版本 SHA-256：${evidence.sha256}`);
+  expect(record).toContain(`原文第 3–4 行\r\n${evidence.matches[0].text}`);
+  expect(record).toContain("返回顺序是原文顺序，并非相关度排名");
   expect(record).toContain("天气专属记录");
   expect(record).toContain("不代表实时事实或回答已正确引用");
   expect(record.split(JSON.stringify(evidence))).toHaveLength(2);
@@ -89,6 +93,9 @@ test("no hit and invalid guide results never invent citations", async ({ page })
   await expect(card.locator(".guide-version")).toHaveCount(1);
   const record = await downloadText(page);
   for (const raw of [JSON.stringify(valid), ...invalid]) expect(record).toContain(raw);
+  expect(record).toContain("本次查询条件下没有可用段落，不能作为回答依据。");
+  expect(record.split("无法解析攻略证据；来源与行号未知")).toHaveLength(invalid.length + 1);
+  expect(record).not.toContain("原文第");
 });
 
 test("fully filtered evidence explains the constraint and survives export", async ({ page }) => {

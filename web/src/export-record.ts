@@ -1,4 +1,5 @@
 import type { Session } from "./api";
+import { parseGuideEvidence } from "./guide-evidence";
 
 // Export the same completed messages and paired evidence that the page displays.
 export function tripRecord(
@@ -31,8 +32,20 @@ export function tripRecord(
     lines.push("", message.role === "user" ? "你：" : "行迹助手：", message.content);
     for (const evidence of message.weatherEvidence)
       lines.push("", "天气工具原始依据（可能包含未知或错误信息）：", evidence);
-    for (const evidence of message.guideEvidence)
+    for (const evidence of message.guideEvidence) {
+      const guide = parseGuideEvidence(evidence);
+      lines.push("", "攻略依据摘要（静态资料，不代表回答已正确引用）：");
+      if (guide) {
+        lines.push(`资料：${guide.source}`, `文件版本 SHA-256：${guide.sha256}`, guide.notice);
+        if (!guide.matches.length) lines.push("本次查询条件下没有可用段落，不能作为回答依据。");
+        for (const passage of guide.matches)
+          lines.push(`原文第 ${passage.start_line}–${passage.end_line} 行`, passage.text);
+        if (guide.more_matches) lines.push("还有其他命中段落未展示；返回顺序是原文顺序，并非相关度排名。");
+      } else {
+        lines.push("无法解析攻略证据；来源与行号未知，请查看下方原始结果。");
+      }
       lines.push("", "攻略工具原始依据（JSON 中含来源版本与原文行号；异常结果可能缺失）：", evidence);
+    }
   }
   const title = session.title.replace(/[<>:"/\\|?*\u0000-\u001f\u007f]/g, "_").slice(0, 40);
   return {
