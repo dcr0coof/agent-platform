@@ -164,3 +164,58 @@ func TestMoreExpectationMustBeExplicit(t *testing.T) {
 		}
 	}
 }
+
+func TestPassageDiagnostics(t *testing.T) {
+	dir := t.TempDir()
+	guide, cases := filepath.Join(dir, "guide.md"), filepath.Join(dir, "cases.json")
+	corpus := []byte("杭州\n\n杭州雨天\n\n上海\n")
+	if err := os.WriteFile(guide, corpus, 0600); err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range []struct {
+		name, query                   string
+		expected, missing, unexpected []int
+	}{
+		{"exact", "杭州", []int{1, 3}, []int{}, []int{}},
+		{"mixed", "杭州", []int{3, 5}, []int{5}, []int{1}},
+		{"no evidence", "北京", []int{1}, []int{1}, []int{}},
+		{"false positive", "杭州", []int{}, []int{}, []int{1, 3}},
+		{"empty", "北京", []int{}, []int{}, []int{}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			data, err := json.Marshal(suite{GuideSHA: fmtHash(corpus), Cases: []queryCase{{ID: tc.name, Query: tc.query, Expected: tc.expected, More: new(bool)}}})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(cases, data, 0600); err != nil {
+				t.Fatal(err)
+			}
+			var out, errors bytes.Buffer
+			code := run([]string{"-guide", guide, "-suite", cases}, &out, &errors)
+			wantCode := 0
+			if len(tc.missing)+len(tc.unexpected) > 0 {
+				wantCode = 1
+			}
+			if code != wantCode {
+				t.Fatalf("exit %d: %s", code, errors.String())
+			}
+			var result struct {
+				Cases []struct {
+					Missing    []int `json:"missing_start_lines"`
+					Unexpected []int `json:"unexpected_start_lines"`
+				}
+			}
+			if err := json.Unmarshal(out.Bytes(), &result); err != nil {
+				t.Fatal(err)
+			}
+			got := result.Cases[0]
+			m, _ := json.Marshal(got.Missing)
+			u, _ := json.Marshal(got.Unexpected)
+			wm, _ := json.Marshal(tc.missing)
+			wu, _ := json.Marshal(tc.unexpected)
+			if string(m) != string(wm) || string(u) != string(wu) {
+				t.Fatalf("missing=%s unexpected=%s", m, u)
+			}
+		})
+	}
+}

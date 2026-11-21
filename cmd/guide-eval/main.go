@@ -46,9 +46,11 @@ type suite struct {
 }
 type caseResult struct {
 	queryCase
-	Actual []int `json:"actual_start_lines"`
-	More   bool  `json:"actual_more_matches"`
-	Exact  bool  `json:"exact"`
+	Actual     []int `json:"actual_start_lines"`
+	Missing    []int `json:"missing_start_lines"`
+	Unexpected []int `json:"unexpected_start_lines"`
+	More       bool  `json:"actual_more_matches"`
+	Exact      bool  `json:"exact"`
 }
 type report struct {
 	Strategy       string       `json:"strategy"`
@@ -140,7 +142,18 @@ func evaluate(guidePath, suitePath string) (report, error) {
 				r.FalsePositives++
 			}
 		}
-		r.Cases = append(r.Cases, caseResult{c, actual, result.More, exact})
+		missing, unexpected := []int{}, []int{}
+		for _, line := range c.Expected {
+			if !slices.Contains(actual, line) {
+				missing = append(missing, line)
+			}
+		}
+		for _, line := range actual {
+			if !slices.Contains(c.Expected, line) {
+				unexpected = append(unexpected, line)
+			}
+		}
+		r.Cases = append(r.Cases, caseResult{queryCase: c, Actual: actual, Missing: missing, Unexpected: unexpected, More: result.More, Exact: exact})
 	}
 	return r, nil
 }
