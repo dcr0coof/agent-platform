@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"github.com/dcr0coof/agent-platform/internal/jsoncheck"
 	"io"
 	"os"
 	"regexp"
@@ -87,6 +88,9 @@ func evaluate(guidePath, suitePath string) (report, error) {
 	}
 	if !regexp.MustCompile(`^[a-f0-9]{64}$`).MatchString(s.GuideSHA) || len(s.Cases) == 0 || len(s.Cases) > 200 {
 		return report{}, fmt.Errorf("suite requires a lowercase guide SHA256 and 1–200 cases")
+	}
+	if err := jsoncheck.UniqueStructFields(json.NewDecoder(bytes.NewReader(data))); err != nil {
+		return report{}, err
 	}
 	ids := map[string]bool{}
 	for _, c := range s.Cases {

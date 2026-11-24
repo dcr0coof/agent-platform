@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/dcr0coof/agent-platform/internal/jsoncheck"
 	"io"
 	"mime"
 	"net"
@@ -157,49 +158,11 @@ func readJSON(w http.ResponseWriter, r *http.Request, v interface{}) bool {
 		problem(w, 400, "只允许一个 JSON 对象")
 		return false
 	}
-	if err := uniqueRequestFields(json.NewDecoder(bytes.NewReader(data))); err != nil {
+	if err := jsoncheck.UniqueStructFields(json.NewDecoder(bytes.NewReader(data))); err != nil {
 		problem(w, 400, "请求包含重复 JSON 字段，请每个字段只提供一次")
 		return false
 	}
 	return true
-}
-
-// Run after schema validation; all request objects currently map to structs.
-// EqualFold mirrors encoding/json's case-insensitive struct-field aliases.
-func uniqueRequestFields(d *json.Decoder) error {
-	token, err := d.Token()
-	if err != nil {
-		return err
-	}
-	switch token {
-	case json.Delim('{'):
-		var keys []string
-		for d.More() {
-			token, err := d.Token()
-			if err != nil {
-				return err
-			}
-			key := token.(string)
-			for _, previous := range keys {
-				if strings.EqualFold(key, previous) {
-					return fmt.Errorf("duplicate request field")
-				}
-			}
-			keys = append(keys, key)
-			if err := uniqueRequestFields(d); err != nil {
-				return err
-			}
-		}
-		_, err = d.Token()
-	case json.Delim('['):
-		for d.More() {
-			if err := uniqueRequestFields(d); err != nil {
-				return err
-			}
-		}
-		_, err = d.Token()
-	}
-	return err
 }
 
 type sessionInput struct {

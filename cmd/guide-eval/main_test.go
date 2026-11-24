@@ -219,3 +219,35 @@ func TestPassageDiagnostics(t *testing.T) {
 		})
 	}
 }
+
+func TestDuplicateSuiteFields(t *testing.T) {
+	dir := t.TempDir()
+	guide, cases := filepath.Join(dir, "guide.md"), filepath.Join(dir, "cases.json")
+	corpus := []byte("杭州\n")
+	if err := os.WriteFile(guide, corpus, 0600); err != nil {
+		t.Fatal(err)
+	}
+	valid := fmt.Sprintf(`{"guide_sha256":%q,"cases":[{"id":"a","query":"杭州","expected_start_lines":[1],"expected_more_matches":false}]}`, fmtHash(corpus))
+	for _, data := range []string{
+		strings.Replace(valid, `"query":"杭州"`, `"query":"不存在","QUERY":"杭州"`, 1),
+		strings.Replace(valid, `"expected_start_lines":[1]`, `"expected_start_lines":[],"expected_start_\u006cines":[1]`, 1),
+		strings.Replace(valid, `"cases":`, `"cases":[],"cases":`, 1),
+	} {
+		if err := os.WriteFile(cases, []byte(data), 0600); err != nil {
+			t.Fatal(err)
+		}
+		var out, errors bytes.Buffer
+		if code := run([]string{"-guide", guide, "-suite", cases}, &out, &errors); code != 2 || out.Len() != 0 || !strings.Contains(errors.String(), "duplicate") {
+			t.Fatalf("code=%d out=%s err=%s", code, &out, &errors)
+		}
+	}
+	// The same field names in separate case objects are valid.
+	valid = strings.Replace(valid, `}]}`, `},{"id":"b","query":"杭州","expected_start_lines":[1],"expected_more_matches":false}]}`, 1)
+	if err := os.WriteFile(cases, []byte(valid), 0600); err != nil {
+		t.Fatal(err)
+	}
+	var out, errors bytes.Buffer
+	if code := run([]string{"-guide", guide, "-suite", cases}, &out, &errors); code != 0 {
+		t.Fatalf("separate objects rejected: %s", &errors)
+	}
+}
