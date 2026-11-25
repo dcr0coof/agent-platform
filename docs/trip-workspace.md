@@ -116,3 +116,5 @@ npm run test:e2e
 ```
 
 若本机已有 Chrome，可在 PowerShell 设置 `$env:PLAYWRIGHT_CHANNEL = "chrome"` 后直接运行浏览器测试。Linux CI 安装 Chromium 和系统依赖；Go CI 在 Windows / Linux 运行，Linux 额外执行 `go test -race ./...`。未运行实际付费模型请求时，只能声明模拟客户端协议与界面路径已验证。
+
+保存的非空出行日期必须为规范的 YYYY-MM-DD，年份为0001–9999，且为真实日历日期；零年、缺少补零和无效闰日会在创建/更新时被拒绝，不写入约束。空日期仍表示待确认。此规则不限制历史日期，也不保证天气覆盖或行程可行；9999-12-31作为结束日期仍超出日历导出的排他结束日范围。对应Issue #108。
