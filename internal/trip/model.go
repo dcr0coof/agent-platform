@@ -38,8 +38,9 @@ func (c Constraints) Validate() error {
 	}
 	for _, d := range []string{c.StartDate, c.EndDate} {
 		if d != "" {
-			if _, err := time.Parse("2006-01-02", d); err != nil {
-				return fmt.Errorf("日期格式须为 YYYY-MM-DD")
+			date, err := time.Parse("2006-01-02", d)
+			if err != nil || date.Year() < 1 || date.Format("2006-01-02") != d {
+				return fmt.Errorf("日期须为有效的 YYYY-MM-DD，年份范围 0001–9999")
 			}
 		}
 	}
