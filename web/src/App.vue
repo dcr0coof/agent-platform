@@ -82,15 +82,15 @@ const messages = computed(() => {
   }
   return visible;
 });
-const completeCount = computed(() => {
+const missingConstraints = computed(() => {
   const saved = current.value?.constraints;
-  if (!saved) return 0;
   return [
-    saved.origin.trim(), saved.destination.trim(),
-    saved.start_date && saved.end_date,
-    saved.travelers, saved.budget, saved.budget_scope,
-  ].filter(Boolean).length;
+    ["出发地", saved?.origin.trim()], ["目的地", saved?.destination.trim()],
+    ["开始和结束日期", saved?.start_date && saved?.end_date],
+    ["出行人数", saved?.travelers], ["预算金额", saved?.budget], ["预算范围", saved?.budget_scope],
+  ].filter(([, value]) => !value).map(([label]) => label as string);
 });
+const completeCount = computed(() => 6 - missingConstraints.value.length);
 const dateLabel = computed(() =>
   form.value.start_date
     ? `${form.value.start_date.slice(5)}${form.value.end_date ? " — " + form.value.end_date.slice(5) : ""}`
@@ -645,6 +645,7 @@ onBeforeUnmount(() => {
         </div>
         <div class="completion">
           <span>已确认 {{ completeCount }} / 6 项（仅计已保存条件）</span>
+          <p class="saved-missing" role="status">{{ missingConstraints.length ? `已保存条件待补充：${missingConstraints.join("、")}` : "六项条件均已保存；仍需核对行程、预算和天气可行性。" }}</p>
           <p v-if="dirty" class="notice" role="status">表单有未保存修改，确认计数将在保存成功后更新。</p>
           <div class="segments">
             <i
