@@ -125,7 +125,10 @@ test("fully filtered evidence explains the constraint and survives export", asyn
   await expect(card).toContainText("本次查询条件下没有可用段落");
   await expect(card).not.toContainText("关键词没有命中");
   await expect(card.locator(".guide-passage")).toHaveCount(0);
-  expect(await downloadText(page)).toContain(JSON.stringify(evidence));
+  const exported = await downloadText(page);
+  expect(exported).toContain(JSON.stringify(evidence));
+  expect(exported).toContain('实际检索词（全部匹配）：["杭州"]');
+  expect(exported).toContain('实际排除词（任一命中即排除整段）：["博物馆"]');
   await expect(card.locator(".guide-coverage")).toContainText("筛选后共 0 段，本次展示 0 段，未展示 0 段");
 });
 
@@ -187,5 +190,10 @@ test("effective filter metadata is escaped and legacy or invalid metadata stays 
   await expect(card).not.toContainText("不能从参数推断");
   await expect(card.locator("img, script")).toHaveCount(0);
   expect(await page.evaluate(() => (window as any).injected)).toBeUndefined();
-  expect(await downloadText(page)).toContain(JSON.stringify({ ...base, ...variants[0] }));
+  const exported = await downloadText(page);
+  expect(exported).toContain(JSON.stringify({ ...base, ...variants[0] }));
+  expect(exported).toContain('实际排除词（任一命中即排除整段）：未启用排除');
+  expect(exported).toContain('实际检索词（全部匹配）：' + JSON.stringify(variants[0].query_terms));
+  expect(exported.split('实际筛选词未知：')).toHaveLength(variants.length);
+  expect(exported).not.toContain('不能从参数推断');
 });

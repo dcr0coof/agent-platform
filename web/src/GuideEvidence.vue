@@ -1,18 +1,10 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import { parseGuideEvidence } from "./guide-evidence";
+import { parseGuideEvidence, guideFilters } from "./guide-evidence";
 
 const props = defineProps<{ raw: string }>();
 const evidence = computed(() => parseGuideEvidence(props.raw));
-const filters = computed(() => {
-  const query = evidence.value?.query_terms;
-  const excluded = evidence.value?.excluded_terms;
-  const valid = (terms: unknown): terms is string[] =>
-    Array.isArray(terms) && terms.length <= 6 &&
-    terms.every(term => typeof term === "string" && term.trim().length > 0);
-  if (!valid(query) || query.length === 0 || !valid(excluded)) return null;
-  return { query, excluded };
-});
+const filters = computed(() => guideFilters(evidence.value));
 const coverage = computed(() => {
   const e = evidence.value;
   if (!e || typeof e.query_matches !== "number" || typeof e.excluded_matches !== "number" ||

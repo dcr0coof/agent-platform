@@ -13,3 +13,12 @@ export function parseGuideEvidence(raw: string): Evidence | null {
     return value;
   } catch { return null; }
 }
+export function guideFilters(evidence: Evidence | null) {
+  const query = evidence?.query_terms;
+  const excluded = evidence?.excluded_terms;
+  const valid = (terms: unknown): terms is string[] =>
+    Array.isArray(terms) && terms.length <= 6 &&
+    terms.every(term => typeof term === "string" && term.trim().length > 0);
+  if (!valid(query) || query.length === 0 || !valid(excluded)) return null;
+  return { query, excluded };
+}
