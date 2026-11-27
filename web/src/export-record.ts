@@ -1,5 +1,5 @@
 import type { Session } from "./api";
-import { parseGuideEvidence } from "./guide-evidence";
+import { parseGuideEvidence, guideFilters } from "./guide-evidence";
 
 // Export the same completed messages and paired evidence that the page displays.
 export function tripRecord(
@@ -37,6 +37,15 @@ export function tripRecord(
       lines.push("", "攻略依据摘要（静态资料，不代表回答已正确引用）：");
       if (guide) {
         lines.push(`资料：${guide.source}`, `文件版本 SHA-256：${guide.sha256}`, guide.notice);
+        const filters = guideFilters(guide);
+        if (filters) {
+          lines.push(
+            '实际检索词（全部匹配）：' + JSON.stringify(filters.query),
+            '实际排除词（任一命中即排除整段）：' + (filters.excluded.length ? JSON.stringify(filters.excluded) : '未启用排除'),
+          );
+        } else {
+          lines.push('实际筛选词未知：此记录未提供完整有效的筛选词，不等于未启用排除。');
+        }
         if (!guide.matches.length) lines.push("本次查询条件下没有可用段落，不能作为回答依据。");
         for (const passage of guide.matches)
           lines.push(`原文第 ${passage.start_line}–${passage.end_line} 行`, passage.text);
