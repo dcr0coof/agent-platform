@@ -127,6 +127,7 @@ test("fully filtered evidence explains the constraint and survives export", asyn
   await expect(card.locator(".guide-passage")).toHaveCount(0);
   const exported = await downloadText(page);
   expect(exported).toContain(JSON.stringify(evidence));
+  expect(exported).toContain("筛选后共 0 段，本次展示 0 段，未展示 0 段");
   expect(exported).toContain('实际检索词（全部匹配）：["杭州"]');
   expect(exported).toContain('实际排除词（任一命中即排除整段）：["博物馆"]');
   await expect(card.locator(".guide-coverage")).toContainText("筛选后共 0 段，本次展示 0 段，未展示 0 段");
@@ -153,6 +154,9 @@ test("coverage distinguishes truncation and rejects contradictory statistics", a
   await expect(coverage.first()).toContainText("筛选后共 6 段，本次展示 3 段，未展示 3 段");
   for (let i = 1; i < stats.length; i++) await expect(coverage.nth(i)).toContainText("段落覆盖数量未知");
   await expect(card.locator(".guide-passage")).toHaveCount(stats.length * 3);
+  const exported = await downloadText(page);
+  expect(exported).toContain("筛选后共 6 段，本次展示 3 段，未展示 3 段");
+  expect(exported.split("段落覆盖数量未知：")).toHaveLength(stats.length);
 });
 
 test("effective filter metadata is escaped and legacy or invalid metadata stays unknown", async ({ page }) => {

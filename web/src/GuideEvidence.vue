@@ -1,20 +1,11 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import { parseGuideEvidence, guideFilters } from "./guide-evidence";
+import { parseGuideEvidence, guideFilters, guideCoverage } from "./guide-evidence";
 
 const props = defineProps<{ raw: string }>();
 const evidence = computed(() => parseGuideEvidence(props.raw));
 const filters = computed(() => guideFilters(evidence.value));
-const coverage = computed(() => {
-  const e = evidence.value;
-  if (!e || typeof e.query_matches !== "number" || typeof e.excluded_matches !== "number" ||
-      !Number.isSafeInteger(e.query_matches) || !Number.isSafeInteger(e.excluded_matches) ||
-      e.excluded_matches < 0 || e.query_matches < e.excluded_matches) return null;
-  const remaining = e.query_matches - e.excluded_matches;
-  const omitted = remaining - e.matches.length;
-  if (omitted < 0 || e.more_matches !== (omitted > 0)) return null;
-  return { remaining, omitted };
-});
+const coverage = computed(() => guideCoverage(evidence.value));
 </script>
 
 <template>
