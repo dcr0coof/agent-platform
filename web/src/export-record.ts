@@ -1,5 +1,5 @@
 import type { Session } from "./api";
-import { parseGuideEvidence, guideFilters } from "./guide-evidence";
+import { parseGuideEvidence, guideFilters, guideCoverage } from "./guide-evidence";
 
 // Export the same completed messages and paired evidence that the page displays.
 export function tripRecord(
@@ -37,6 +37,10 @@ export function tripRecord(
       lines.push("", "攻略依据摘要（静态资料，不代表回答已正确引用）：");
       if (guide) {
         lines.push(`资料：${guide.source}`, `文件版本 SHA-256：${guide.sha256}`, guide.notice);
+        const coverage = guideCoverage(guide);
+        lines.push(coverage
+          ? '筛选后共 ' + coverage.remaining + ' 段，本次展示 ' + guide.matches.length + ' 段，未展示 ' + coverage.omitted + ' 段；数量不代表相关度或资料完整性。'
+          : '段落覆盖数量未知：记录缺少有效一致的统计，不能按零处理。');
         const filters = guideFilters(guide);
         if (filters) {
           lines.push(

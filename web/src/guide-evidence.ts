@@ -22,3 +22,13 @@ export function guideFilters(evidence: Evidence | null) {
   if (!valid(query) || query.length === 0 || !valid(excluded)) return null;
   return { query, excluded };
 }
+export function guideCoverage(e: Evidence | null) {
+
+  if (!e || typeof e.query_matches !== "number" || typeof e.excluded_matches !== "number" ||
+      !Number.isSafeInteger(e.query_matches) || !Number.isSafeInteger(e.excluded_matches) ||
+      e.excluded_matches < 0 || e.query_matches < e.excluded_matches) return null;
+  const remaining = e.query_matches - e.excluded_matches;
+  const omitted = remaining - e.matches.length;
+  if (omitted < 0 || e.more_matches !== (omitted > 0)) return null;
+  return { remaining, omitted };
+}
